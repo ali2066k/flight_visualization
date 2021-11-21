@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Live Flight Tracking</title>
+        <!-- https://d3js.org/ -->
+        <script type="text/javascript" src="js/d3.v7.min.js"></script>
+        <script type="text/javascript" src="js/dynamic-time-warping.min.js"></script>
+        <script src="https://unpkg.com/topojson@3.0.2/dist/topojson.min.js"></script>
+        <script type="text/javascript" src="js/front_page.js"></script>
+        <link rel="stylesheet" href="css/styles.css">
+    </head>
+
+    <body onload="createViz();">
+        <div id="main" class="main">
+
+            <div id="hor_widgets" class="hor_widgets">
+                <form>
+                    <div id="plane_perc_div" class="hor_widgets_element">
+                        <label data-text="Option 1" class="label_class_asli">Shown Percentage</label>
+                        <input type="range" step="10" min="10" max="100" value="100" class="slider" id="plane_percentage_slider" oninput="planePercentageOutputId.value = plane_percentage_slider.value; setSampleSize(plane_percentage_slider.value)">
+                        <output name="planePercentage" id="planePercentageOutputId" style="margin-left: 2px; font-size: 12px">100</output>
+                    </div>
+
+                    <div id="plane_perc_div1" class="hor_widgets_element">
+                        <input type="radio" name="radio" class="radioBtn">
+                        <label data-text="Option 1" class="label_class">Planes</label>
+                        <br/>
+                        <input type="radio" name="radio" class="radioBtn">
+                        <label data-text="Option 2" class="label_class">Routes</label>
+                        <br/>
+                        <input type="radio" name="radio" class="radioBtn">
+                        <label data-text="Option 3" class="label_class">Airports</label>
+                        <div class="sphere"></div>
+                    </div>
+
+<!--                    <div id="plane_perc_div2" class="hor_widgets_element">-->
+<!--                        <span class="hor_widgets_texts">Shown Plane:</span>-->
+<!--                        <input step="10" type="range" min="10" max="100" value="50" class="slider" id="plane_percentage_slider2">-->
+<!--                    </div>-->
+
+
+<!--                    <input type="text" name="sampleField" value="*" id="sampleTf"-->
+<!--                           onkeydown="handleKeyEvent(event);"/>-->
+<!--                    <input type="button" value="Sample" onclick="setSample();" id="sampleBt"/>-->
+<!--                    <span class="formLb" style="padding-left:5em;">Scale:</span>-->
+<!--                    <select id="scaleSelSP" onchange="setScaleSP();">-->
+<!--                        <option value="log" selected="selected">Log</option>-->
+<!--                        <option value="linear">Linear</option>-->
+<!--                    </select>-->
+
+<!--                    <input class="" type="email" placeholder="What's your email?"></input>-->
+<!--                    <button type="submit"><i class="icon ion-android-arrow-forward"></i></button>-->
+
+                </form>
+            </div>
+
+        </div>
+    </body>
+
+</html>

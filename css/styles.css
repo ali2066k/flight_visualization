@@ -1,0 +1,131 @@
+body {
+    margin: 0px;
+    overflow: hidden;
+}
+
+.main {
+    display: grid;
+    grid-column-gap: 5px;
+}
+.sphere {
+    fill: #464646;
+}
+
+.country {
+    fill: #000000;
+    stroke: black;
+    stroke-opacity: 0.2;
+}
+.country:hover {
+    fill: #505050;
+    stroke-opacity: 0.8;
+}
+
+.country {
+    fill: #171717;
+    stroke: #6c6c6c;
+    stroke-opacity: 0.1;
+}
+/*.country:hover {*/
+/*    fill: #986d36;*/
+/*    stroke-opacity: 0.8;*/
+/*}*/
+
+.ocean {
+    fill: #343949;
+    stroke: black;
+    stroke-opacity: 0.05;
+}
+/*.ocean:hover {*/
+/*    fill: #2340d5;*/
+/*}*/
+
+.lake {
+    fill: #343949;
+    stroke: black;
+    stroke-opacity: 0.01;
+}
+/*.lake:hover {*/
+/*    fill: #9da6d3;*/
+/*}*/
+
+.glacier {
+    fill: #4d535e;
+    stroke: #ffffff;
+    stroke-opacity: 0.01;
+}
+/*.glacier:hover {*/
+/*    fill: #9eb8d3;*/
+/*}*/
+
+/*.river {*/
+/*    stroke: #6996cc;*/
+/*}*/
+/*.river:hover {*/
+/*    fill: #6196c9;*/
+/*}*/
+
+.tooltip {
+    text-align: left;
+    width: 790px;
+    height: 18px;
+    transform: translate(0%, -120%);
+    padding: 1px;
+    padding-left: 10px;
+    margin-left: 5px;
+    font: 12px sans-serif;
+    background: #a4a4a4;
+    border: 0px;
+    pointer-events: none;
+}
+
+.hor_widgets {
+    text-align:left;
+    position: absolute;
+}
+
+.slider {
+    -webkit-appearance: none;  /* Override default CSS styles */
+    margin-left: 8px;
+    appearance: none;
+    width: 70%; /* Full-width */
+    height: 7px; /* Specified height */
+    border-radius: 7px;
+    background: rgba(148, 148, 148, 0.61); /* Grey background */
+    outline: none; /* Remove outline */
+    opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
+    -webkit-transition: .2s; /* 0.2 seconds transition on hover */
+    transition: opacity .2s;
+}
+
+/* Mouse-over effects */
+.slider:hover {
+    opacity: 1; /* Fully shown on mouse-over */
+}
+
+.hor_widgets_element {
+    display: block;
+    background: rgba(229, 228, 228, 0.7);
+    margin-top: 5px;
+}
+.hor_widgets_element:hover {
+    display: block;
+    background: rgba(229, 228, 228, 0.86);
+}
+
+.label_class_asli {
+    margin-left: 10px;
+    font-size: 8px;
+    font-family: Consolas;
+}
+
+.label_class {
+    /*margin-left: 5px;*/
+    align-content: center;
+    font-size: 8px;
+    font-family: Consolas;
+}
+
+.radioBtn {
+    text-align: center;
+}
