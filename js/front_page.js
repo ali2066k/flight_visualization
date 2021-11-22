@@ -14,7 +14,10 @@ var ctx = {
     liveFlights: [],
     alreadyIn: [],
     planeUpdater: null,
-    available_planes_percentage: 100
+    available_planes_percentage: 100,
+    planes_bool: true,
+    airports_bool: false,
+    routes_bool: false
 };
 
 const PROJECTIONS = {
@@ -73,10 +76,14 @@ var loadGeo = function(newSVG){
                     d3.json("resources/geo_maps/ne_50m_ocean.geojson"),
                     d3.json("resources/geo_maps/ne_50m_lakes.geojson"),
                     d3.json("resources/geo_maps/ne_50m_glaciated_areas.geojson"),
-                    d3.json("resources/geo_maps/ne_50m_rivers_lake_centerlines.geojson")];
+                    d3.json("resources/geo_maps/ne_50m_rivers_lake_centerlines.geojson"),
+                    d3.csv("resources/data/airports.csv")];
     Promise.all(promises).then(function(d){
         drawMap(d[0], d[1], d[2], d[3], d[4], newSVG);
         loadAirPlanes();
+        if (ctx.airports_bool) {
+            loadAirports(d[5]);
+        }
         // updateCountries();
     }).catch(function(error){console.log(error)});
 };
@@ -165,40 +172,49 @@ var loadData = function(svgEl){
 
 };
 
+var loadAirports = function (airportData) {
+    console.log(airportData);
+}
+
 var loadAirPlanes = function (newSVG) {
-    d3.json(`https://opensky-network.org/api/states/all?states=10&lamin=${ctx.LA_MIN}&lomin=${ctx.LO_MIN}&lamax=${ctx.LA_MAX}&lomax=${ctx.LO_MAX}`).then(function (data) {
-        // console.log(data)
-        var total_flights = data["states"].length
-        //Clear currentFlights
-        var num = Math.floor((ctx.available_planes_percentage * total_flights)/100);
-        ctx.liveFlights = []
-        for (element in data["states"]){
-            var tmp = {}
-            if (data["states"][element][5] != 0 && data["states"][element][6] != 0){
-                tmp['id'] = data["states"][element][0]
-                tmp['callsign'] = data["states"][element][1]
-                tmp['original_country'] = data["states"][element][2]
-                tmp['lon'] = data["states"][element][5]
-                tmp['lat'] = data["states"][element][6]
-                tmp['onground'] = data["states"][element][8]
-                tmp['bearing'] = data["states"][element][10]
-                tmp['alt'] = data["states"][element][13]
-                // TODO: Check if this attribute is correct ?
-                tmp['Symbol(vega_id)'] = data["states"][element][16]
 
-                if (num-- > 0) {
-                    ctx.liveFlights.push(tmp);
+    if (ctx.planes_bool) {
+        d3.json(`https://opensky-network.org/api/states/all?states=10&lamin=${ctx.LA_MIN}&lomin=${ctx.LO_MIN}&lamax=${ctx.LA_MAX}&lomax=${ctx.LO_MAX}`).then(function (data) {
+            console.log(data)
+            var total_flights = data["states"].length
+            //Clear currentFlights
+            var num = Math.floor((ctx.available_planes_percentage * total_flights)/100);
+            ctx.liveFlights = []
+            for (element in data["states"]){
+                var tmp = {}
+                if (data["states"][element][5] != 0 && data["states"][element][6] != 0){
+                    tmp['id'] = data["states"][element][0]
+                    tmp['callsign'] = data["states"][element][1]
+                    tmp['original_country'] = data["states"][element][2]
+                    tmp['lon'] = data["states"][element][5]
+                    tmp['lat'] = data["states"][element][6]
+                    tmp['onground'] = data["states"][element][8]
+                    tmp['bearing'] = data["states"][element][10]
+                    tmp['alt'] = data["states"][element][13]
+                    // TODO: Check if this attribute is correct ?
+                    tmp['Symbol(vega_id)'] = data["states"][element][16]
+
+                    if (num-- > 0) {
+                        ctx.liveFlights.push(tmp);
+                    }
+
                 }
-
             }
-        }
-        updatePlanes();
-        // active for moving planes
-        // setInterval(function(){
-        //     loadAirPlanes();
-        //     console.log("Ran")
-        // }, 10000);
-    })
+            updatePlanes();
+            // active for moving planes
+            // setInterval(function(){
+            //     loadAirPlanes();
+            //     console.log("Ran")
+            // }, 10000);
+        })
+    }
+
+
 }
 
 function updatePlanes() {
@@ -208,7 +224,7 @@ function updatePlanes() {
         .selectAll("image")
         .data(ctx.liveFlights, function(d){
             return d['id']
-        })
+        }).attr("opacity", 1);
 
 
     // Define the div for the tooltip
@@ -275,11 +291,33 @@ var getToolTipTransform = function(coord) {
     return (ctx.scale == 1) ? t : t + ` scale(${ctx.scale})`;
 };
 
+var loadRoutes = function () {
+    console.log("will be added soon");
+}
 var setSampleSize = function(sample){
     // console.log(sample)
     ctx.available_planes_percentage = sample;
     loadAirPlanes();
 };
+
+var handleKeyEventPlanes = function () {
+    ctx.planes_bool = true;
+    console.log(ctx.planes_bool);
+    var planSelection = d3.select("g#planes");
+    planSelection.style("visibility", "visible");
+}
+var handleKeyEventAirports = function () {
+    ctx.airports_bool = true;
+    console.log(ctx.airports_bool);
+    var planSelection = d3.select("g#planes");
+    planSelection.style("visibility", "hidden");
+    loadAirports();
+}
+var handleKeyEventRoutes = function () {
+    ctx.routes_bool = true;
+    console.log(ctx.routes_bool);
+    loadRoutes();
+}
 
 // var updateCountries = function (newSvg) {
 //
