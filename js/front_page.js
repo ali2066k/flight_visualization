@@ -20,6 +20,19 @@ var ctx = {
     routes_bool: false
 };
 
+
+// TODO:
+// https://ourairports.com/data/
+// https://ourairports.com/data/
+// https://rapidapi.com/Active-api/api/airport-info
+
+// Heat Map
+// https://www.google.com/search?q=d3+geographic+heatmap&rlz=1C1UEAD_frFR969FR969&oq=d3+geographic+heatmap&aqs=chrome..69i57.5713j0j4&sourceid=chrome&ie=UTF-8
+//https://bl.ocks.org/patricksurry/803a131d4c34fde54b9fbb074341daa5
+//
+//
+
+
 const PROJECTIONS = {
     ER: d3.geoEquirectangular().center([0,0]).scale(128).translate([ctx.w/2,ctx.h/2]),
 };
