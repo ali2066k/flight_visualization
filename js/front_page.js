@@ -81,10 +81,7 @@ var loadGeo = function(newSVG){
     Promise.all(promises).then(function(d){
         drawMap(d[0], d[1], d[2], d[3], d[4], newSVG);
         loadAirPlanes();
-        if (ctx.airports_bool) {
-            loadAirports(d[5]);
-        }
-        // updateCountries();
+        loadAirports(d[5]);
     }).catch(function(error){console.log(error)});
 };
 
@@ -149,6 +146,11 @@ var drawMap = function(countries, oceans, lakes, glaciers, rivers, svgEl){
         .attr("id", "planes")
         .attr("class", "plane");
 
+    var airports = ctx.mapG.append("g")
+        .attr("id", "airports")
+        .attr("class", "airport");
+
+
     var zoom = d3.zoom()
         .scaleExtent([1, 40])
         .on("zoom", zoomed);
@@ -173,14 +175,37 @@ var loadData = function(svgEl){
 };
 
 var loadAirports = function (airportData) {
-    console.log(airportData);
+    ctx.airportInitialData = airportData;
+    if (ctx.airports_bool) {
+        // console.log(ctx.airportInitialData);
+        ctx.availableairports = []
+        var numairport = 2220;
+        for (var j = 0; j < ctx.airportInitialData.length; j++) {
+            if (ctx.airportInitialData[j].type === "large_airport") {
+                let tmp = {}
+                // console.log("Inner loop");
+                // console.log(ctx.airportInitialData[j].latitude_deg);
+                // console.log(ctx.airportInitialData[j].longitude_deg);
+                tmp['id'] = ctx.airportInitialData[j].ident;
+                tmp['original_country'] = ctx.airportInitialData[j].iso_country;
+                tmp['lon'] = ctx.airportInitialData[j].longitude_deg;
+                tmp['lat'] = ctx.airportInitialData[j].latitude_deg;
+                if (numairport-- > 0) {
+                    ctx.availableairports.push(tmp);
+                }
+            }
+        }
+        console.log(ctx.availableairports);
+        updateAirports();
+    }
+
 }
 
 var loadAirPlanes = function (newSVG) {
 
     if (ctx.planes_bool) {
         d3.json(`https://opensky-network.org/api/states/all?states=10&lamin=${ctx.LA_MIN}&lomin=${ctx.LO_MIN}&lamax=${ctx.LA_MAX}&lomax=${ctx.LO_MAX}`).then(function (data) {
-            console.log(data)
+            // console.log(data)
             var total_flights = data["states"].length
             //Clear currentFlights
             var num = Math.floor((ctx.available_planes_percentage * total_flights)/100);
@@ -216,8 +241,21 @@ var loadAirPlanes = function (newSVG) {
 
 
 }
+var updateAirports = function () {
+    var airportSelection = d3.select("g#airports")
+        .selectAll("image")
+        .data(ctx.availableairports, function(d){
+            return d['id']
+        }).attr("opacity", 1);
 
-function updatePlanes() {
+    airportSelection.enter()
+        .append("image")
+        .attr("transform", (d) => (getPlaneTransform(d)))
+        .attr("width", 4)
+        .attr("xlink:href", "resources/img/white_dot.png")
+}
+
+var updatePlanes = function () {
     // console.log(ctx.currentFlights)
 
     var planSelection = d3.select("g#planes")
@@ -303,15 +341,20 @@ var setSampleSize = function(sample){
 var handleKeyEventPlanes = function () {
     ctx.planes_bool = true;
     console.log(ctx.planes_bool);
+    var airportsSelection = d3.select("g#airports");
+    airportsSelection.style("visibility", "hidden");
     var planSelection = d3.select("g#planes");
     planSelection.style("visibility", "visible");
+
 }
 var handleKeyEventAirports = function () {
     ctx.airports_bool = true;
     console.log(ctx.airports_bool);
     var planSelection = d3.select("g#planes");
     planSelection.style("visibility", "hidden");
-    loadAirports();
+    var airportsSelection = d3.select("g#airports");
+    airportsSelection.style("visibility", "visible");
+    loadAirports(ctx.airportInitialData);
 }
 var handleKeyEventRoutes = function () {
     ctx.routes_bool = true;

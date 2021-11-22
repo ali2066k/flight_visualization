@@ -129,3 +129,7 @@ body {
 .radioBtn {
     text-align: center;
 }
+
+.airport {
+    fill: white;
+}
