@@ -215,7 +215,6 @@ var loadAirports = function (airportData) {
 }
 
 var loadAirPlanes = function (newSVG) {
-
     if (ctx.planes_bool) {
         d3.json(`https://opensky-network.org/api/states/all?states=10&lamin=${ctx.LA_MIN}&lomin=${ctx.LO_MIN}&lamax=${ctx.LA_MAX}&lomax=${ctx.LO_MAX}`).then(function (data) {
             // console.log(data)
@@ -251,8 +250,6 @@ var loadAirPlanes = function (newSVG) {
             // }, 10000);
         })
     }
-
-
 }
 var updateAirports = function () {
     var airportSelection = d3.select("g#airports")
@@ -374,6 +371,47 @@ var handleKeyEventRoutes = function () {
     console.log(ctx.routes_bool);
     loadRoutes();
 }
+
+
+var loadTrackByAirCrafts = function (aircrafticao24, time) {
+
+    if (ctx.planes_bool) {
+        d3.json(`https://opensky-network.org/api/tracks/all?icao24=${aircrafticao24}&time=${time}`).then(function (data) {
+            console.log(data)
+
+            // //Clear currentFlights
+            // var num = Math.floor((ctx.available_planes_percentage * total_flights)/100);
+            // ctx.liveFlights = []
+            // for (element in data["states"]){
+            //     var tmp = {}
+            //     if (data["states"][element][5] != 0 && data["states"][element][6] != 0){
+            //         tmp['id'] = data["states"][element][0]
+            //         tmp['callsign'] = data["states"][element][1]
+            //         tmp['original_country'] = data["states"][element][2]
+            //         tmp['lon'] = data["states"][element][5]
+            //         tmp['lat'] = data["states"][element][6]
+            //         tmp['onground'] = data["states"][element][8]
+            //         tmp['bearing'] = data["states"][element][10]
+            //         tmp['alt'] = data["states"][element][13]
+            //         // TODO: Check if this attribute is correct ?
+            //         tmp['Symbol(vega_id)'] = data["states"][element][16]
+            //
+            //         if (num-- > 0) {
+            //             ctx.liveFlights.push(tmp);
+            //         }
+            //
+            //     }
+            // }
+            // updatePlanes();
+            // // // active for moving planes
+            // // setInterval(function(){
+            // //     loadAirPlanes();
+            // //     console.log("Ran")
+            // // }, 10000);
+        })
+    }
+}
+
 
 // var updateCountries = function (newSvg) {
 //
