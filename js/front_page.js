@@ -244,7 +244,7 @@ var loadAirPlanes = function (newSVG) {
                 }
             }
             updatePlanes();
-            // active for moving planes
+            // // active for moving planes
             // setInterval(function(){
             //     loadAirPlanes();
             //     console.log("Ran")
