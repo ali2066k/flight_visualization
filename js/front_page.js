@@ -96,6 +96,7 @@ var loadGeo = function(newSVG){
         drawMap(d[0], d[1], d[2], d[3], d[4], newSVG);
         loadAirPlanes();
         loadAirports(d[5]);
+        drawCirclesPath();
         // loadTrackByAirCrafts("4bb18b", "1637882831");
         // loadFlightsByAirCrafts("344649", 1636673231-604800, 1636673231);
     }).catch(function(error){console.log(error)});
@@ -518,6 +519,15 @@ var loadFlightsByAirCrafts = function (aircrafticao24, begin_time, end_time) {
     }).catch(function(error){console.log(error)});
 }
 
+var drawCirclesPath = function () {
+    var path = d3.geoPath().projection(PROJECTIONS.ER)
+    var link = {type: "LineString", coordinates: [[100, 60], [-60, -30]]} // Change these data to see ho the great circle reacts
+    ctx.svg.append("path")
+        .attr("d", path(link))
+        .style("fill", "none")
+        .style("stroke", "#cb1717")
+        .style("stroke-width", 3)
+}
 // var updateCountries = function (newSvg) {
 //
 //     // # masalan vaghti mouse ro mibari ro country tooltip neshoon bede (# available planes and these stuffo neshoon bede)
