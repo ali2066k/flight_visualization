@@ -172,7 +172,6 @@ var drawMap = function(countries, oceans, lakes, glaciers, rivers, svgEl){
         .attr("class", "pathPoint");
 
 
-
     var zoom = d3.zoom()
         .scaleExtent([1, 40])
         .on("zoom", zoomed);
@@ -520,13 +519,13 @@ var loadFlightsByAirCrafts = function (aircrafticao24, begin_time, end_time) {
 }
 
 var drawCirclesPath = function () {
-    var path = d3.geoPath().projection(PROJECTIONS.ER)
-    var link = {type: "LineString", coordinates: [[100, 60], [-60, -30]]} // Change these data to see ho the great circle reacts
-    ctx.svg.append("path")
-        .attr("d", path(link))
-        .style("fill", "none")
-        .style("stroke", "#cb1717")
-        .style("stroke-width", 3)
+    // var path = d3.geoPath().projection(PROJECTIONS.ER)
+    // var link = {type: "LineString", coordinates: [[100, 60], [-60, -30]]} // Change these data to see ho the great circle reacts
+    // ctx.svg.append("path")
+    //     .attr("d", path(link))
+    //     .style("fill", "none")
+    //     .style("stroke", "#cb1717")
+    //     .style("stroke-width", 3)
 }
 // var updateCountries = function (newSvg) {
 //
