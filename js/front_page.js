@@ -23,7 +23,8 @@ var ctx = {
     num_available_airports: 0,
     using_archive: true,
     api_key: "a77503-66f68a",
-    final_airportlist: []
+    final_airportlist: [],
+    final_airlines: []
 };
 
 
@@ -320,11 +321,61 @@ var loadAirlinesData = function (data) {
             return el['statusAirline'] === "active";
         }
     );
-    // console.log(newArray.length)
+    // ctx.final_airlines = newAirlinesArray;
     var airlineNumber_label = d3.select("#number_of_airlines_pl");
     airlineNumber_label.html(newAirlinesArray.length);
-
+    plotAirlineDatasets(newAirlinesArray);
 }
+
+var plotAirlineDatasets = function (airlinesArray) {
+    airlinesArray.sort(function(a,b) {
+        return b.sizeAirline - a.sizeAirline
+    });
+    console.log(airlinesArray.slice(0, 15));
+    var vlSpec2 = {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.1.1..json",
+        "description": "A barchart",
+        "width": 400,
+        "height": 250,
+        "config": {
+            "axis": {
+                "labelFont": "Lucida Bright",
+                "titleFont": "Lucida Bright",
+                "labelColor": "#bdbdbd",
+                "tickColor": "#bdbdbd",
+                "titleColor": "#bdbdbd",
+                "labelFontSize": 18,
+            },
+            "legend": {
+                "disable": true,
+                "titleColor": "#bdbdbd",
+                "labelColor": "#bdbdbd"
+            }
+        },
+        "data": {
+            "values": airlinesArray.slice(0, 12)
+        },
+        "mark": "bar",
+        "background": '#292d3a',
+        "encoding": {
+            "y": {
+                "field": "nameAirline",
+                "title": "Airlines"
+            },
+            "x": {
+                "field": "sizeAirline",
+                "type": "quantitative",
+                "title": "Fleet Size"},
+            "color": {
+                "field": "sizeAirline",
+                "scale": {
+                    "range": ["#9a9dab", "#9a9dab"]}
+            }
+        }
+    }
+    vegaEmbed("#airline_barchart", vlSpec2);
+}
+
 var loadAirportDataset = function () {
     if (ctx.using_archive) {
         d3.json('resources/data/airportDatabase.json').then(function (data) {
@@ -343,7 +394,7 @@ var loadAirportData = function (data) {
     /*
     * Need to remove duplicates
     * */
-    console.log("Data: " + data.length)
+    // console.log("Data: " + data.length)
 
     // console.log(data.length);
     // console.log(data)
@@ -405,7 +456,7 @@ var loadAirPlanes = function (newSVG) {
     if (ctx.planes_bool) {
         if (ctx.using_archive) {
             d3.json(`resources/live_data/flights.json`).then(function (data) {
-                console.log("Offline Loading");
+                console.log("Airplanes Loading --> Offline");
                 // console.log(data);
                 loadFlightData(data)
                 vloadGroundDistribution(ctx.liveFlights)
@@ -414,7 +465,7 @@ var loadAirPlanes = function (newSVG) {
         }
         else {
             d3.json(`http://aviation-edge.com/v2/public/flights?key=${ctx.api_key}&limit=30000`).then(function (data) {
-                console.log("Online Loading");
+                console.log("Airplanes Loading --> Online");
                 // console.log(data);
                 loadFlightData(data);
                 vloadGroundDistribution(ctx.liveFlights)

@@ -8,7 +8,7 @@ body {
     display: grid;
     grid-template-columns: repeat(4, auto);
     gap: 1px;
-    grid-auto-rows: minmax(50px, auto);
+    grid-auto-rows: minmax(auto, auto);
     position: absolute;
     grid-column-gap: 1px;
 }
