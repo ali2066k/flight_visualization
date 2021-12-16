@@ -5,6 +5,9 @@
         <title>Live Flight Tracking</title>
         <!-- https://d3js.org/ -->
         <script type="text/javascript" src="js/d3.v7.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vega@5.20.2"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.1.1"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.18.2"></script>
         <script type="text/javascript" src="js/dynamic-time-warping.min.js"></script>
         <script src="https://unpkg.com/topojson@3.0.2/dist/topojson.min.js"></script>
         <script type="text/javascript" src="js/front_page.js"></script>
@@ -14,7 +17,7 @@
     <body onload="createViz();">
         <div id="main" class="main">
 
-            <div id="hor_widgets" class="hor_widgets">
+            <div id="hor_widgets_left" class="hor_widgets">
                 <form>
                     <div id="plane_perc_div" class="hor_widgets_element">
                         <label data-text="Option 1" class="label_class_asli">Shown Percentage</label>
@@ -54,6 +57,39 @@
                 </form>
             </div>
 
+            <div id="svg_div">
+
+            </div>
+
+            <div id="hor_widgets_right_btn" class="hor_widgets_right_btn">
+
+                <div id="label_number_of_flights" class="title_placard_numbers">
+
+                </div>
+                <div id="number_of_flights_pl" class="placard_numbers">
+
+                </div>
+
+                <div id="label_number_of_airports" class="title_placard_numbers">
+
+                </div>
+                <div id="number_of_airports_pl" class="placard_numbers">
+
+                </div>
+
+                <div id="label_number_of_airlines" class="title_placard_numbers">
+
+                </div>
+                <div id="number_of_airlines_pl" class="placard_numbers">
+
+                </div>
+
+            </div>
+
+            <div id="chart_div" class="chart_container">
+                <div id="inTheAir" class="chart_element">On ground distrib</div>
+                <div id="duration_altitude_chart" class="chart_element">Duration Altitude Relation</div>
+            </div>
         </div>
     </body>
 
