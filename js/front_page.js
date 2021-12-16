@@ -113,16 +113,19 @@ var vloadGroundDistribution = function (data) {
     var vlSpec2 = {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.1.1..json",
         "description": "A barchart",
-        "height": 40,
+        "height": 350,
+        "width": {"step": 40},
         "config": {
             "axis": {
                 "labelFont": "Lucida Bright",
                 "titleFont": "Lucida Bright",
                 "labelColor": "#bdbdbd",
                 "tickColor": "#bdbdbd",
-                "titleColor": "#bdbdbd",
+                "titleColor": "#bdbdbd"
             },
             "legend": {
+                "orient": "bottom",
+                "diable": false,
                 "titleColor": "#bdbdbd",
                 "labelColor": "#bdbdbd"
             }
@@ -134,22 +137,24 @@ var vloadGroundDistribution = function (data) {
         "background": '#292d3a',
         "encoding": {
             "x": {
-                "aggregate": "count",
-                "field": "onground",
-                "type": "quantitative",
-                "title": "Count of Airplanes"
-            },
-            "y": {
                 "bin": {
                     "maxbins": 1
                 },
+                "axis": {
+                "labels": false},
                 "field": "onground",
-                "type": "quantitative",
+                "type": "nominal",
                 "title": "On Ground"},
             "color": {
                 "field": "onground",
                 "scale": {
                     "range": ["#9a9dab", "#454d64"]}
+            },
+            "y": {
+                "aggregate": "count",
+                "field": "onground",
+                "type": "quantitative",
+                "title": "Count of Airplanes"
             }
         }
     }
@@ -335,8 +340,8 @@ var plotAirlineDatasets = function (airlinesArray) {
     var vlSpec2 = {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.1.1..json",
         "description": "A barchart",
-        "width": 400,
-        "height": 250,
+        "width": 300,
+        "height": 350,
         "config": {
             "axis": {
                 "labelFont": "Lucida Bright",
@@ -353,16 +358,16 @@ var plotAirlineDatasets = function (airlinesArray) {
             }
         },
         "data": {
-            "values": airlinesArray.slice(0, 12)
+            "values": airlinesArray.slice(0, 10)
         },
         "mark": "bar",
         "background": '#292d3a',
         "encoding": {
-            "y": {
+            "x": {
                 "field": "nameAirline",
                 "title": "Airlines"
             },
-            "x": {
+            "y": {
                 "field": "sizeAirline",
                 "type": "quantitative",
                 "title": "Fleet Size"},
