@@ -361,7 +361,7 @@ var loadAirportData = function (data) {
             }
         }
     }
-    console.log("Final airport lists: " + ctx.final_airportlist.length);
+    // console.log("Final airport lists: " + ctx.final_airportlist.length);
     // console.log(ctx.final_airportlist);
     var airlineNumber_label = d3.select("#number_of_airports_pl");
     airlineNumber_label.html(ctx.final_airportlist.length);
