@@ -207,4 +207,23 @@ body {
     grid-row: 1;
 }
 
+.chart_container_second_row {
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    gap: 1px;
+    grid-auto-rows: minmax(auto, auto);
+    position: absolute;
+    grid-column-gap: 1px;
+    padding: 3px;
+    color: #e7e7e7;
+    width: max-content;
+    grid-row: 2;
+}
+.chart_element_airplaneModel_barchart {
+    padding: 2px;
+    border:1px solid black;
+    grid-column: 2;
+    grid-row: 1;
+}
+
 

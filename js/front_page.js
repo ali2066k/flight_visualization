@@ -23,8 +23,18 @@ var ctx = {
     num_available_airports: 0,
     using_archive: true,
     api_key: "a77503-66f68a",
+    MIN_COUNT: 3000,
+    ANIM_DURATION: 600, // ms
+    NODE_SIZE_NL: 3,
+    NODE_SIZE_MAP: 2,
+    LINK_ALPHA: 0.2,
+    nodes: [],
+    links: [],
     final_airportlist: [],
-    final_airlines: []
+    final_airlines: [],
+    airplaneDataset: [],
+    final_airplanes: [],
+    planeRegisterNum: []
 };
 
 
@@ -43,6 +53,16 @@ var ctx = {
 const PROJECTIONS = {
     ER: d3.geoEquirectangular().center([0,0]).scale(128).translate([ctx.w/2,ctx.h/2]),
 };
+
+const QUAD_ANGLE = Math.PI / 6.0;
+
+// https://github.com/d3/d3-force
+var simulation = d3.forceSimulation()
+    .force("link", d3.forceLink()
+        .id(function(d) { return d.id; })
+        .distance(5).strength(0.08))
+    .force("charge", d3.forceManyBody())
+    .force("center", d3.forceCenter(ctx.w / 2, ctx.h / 2));
 
 var createViz = function() {
 
@@ -178,6 +198,7 @@ var loadGeo = function(newSVG){
         loadAirports(d[5]);
         loadAirportDataset();
         loadAirlinesDataset();
+        loadAirplaneDataset();
         drawCirclesPath();
         // loadTrackByAirCrafts("4bb18b", "1637882831");
         // loadFlightsByAirCrafts("344649", 1636673231-604800, 1636673231);
@@ -292,6 +313,7 @@ var loadFlightData = function(data){
         if (tmp['longitude'] === null && tmp['latitude'] === null) {
             continue;
         }
+        tmp['plane_regNumber'] = data[i]["aircraft"]['regNumber']
         onground_status = data[i]["speed"]['isGround']
         if (parseInt(onground_status) != 0) {tmp['onground'] = true;}
         else {tmp['onground'] = false;}
@@ -299,6 +321,7 @@ var loadFlightData = function(data){
         tmp['altitude'] = data[i]["geography"]['altitude']
 
         if (num-- > 0) {
+            ctx.planeRegisterNum.push(tmp['plane_regNumber']);
             ctx.liveFlights.push(tmp);
         }
         // console.log(tmp)
@@ -336,7 +359,7 @@ var plotAirlineDatasets = function (airlinesArray) {
     airlinesArray.sort(function(a,b) {
         return b.sizeAirline - a.sizeAirline
     });
-    console.log(airlinesArray.slice(0, 15));
+    // console.log(airlinesArray.slice(0, 15));
     var vlSpec2 = {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.1.1..json",
         "description": "A barchart",
@@ -399,10 +422,6 @@ var loadAirportData = function (data) {
     /*
     * Need to remove duplicates
     * */
-    // console.log("Data: " + data.length)
-
-    // console.log(data.length);
-    // console.log(data)
     for (var j = 0; j < ctx.availableairports.length; j++) {
         for (var i = 0; i < data.length; i++) {
             if (data[i]['codeIataCity'] === ctx.availableairports[j]['iata_code']) {
@@ -455,7 +474,101 @@ var loadAirports = function (airportData) {
     }
 }
 
+var loadAirplaneDataset = function () {
+    if (ctx.using_archive) {
+        d3.json('resources/data/airplaneDatabase.json').then(function (data) {
+            console.log("Airplane Dataset --> Offline");
+            loadAirplaneData(data)
+        });
+    }
+    else {
+        d3.json(`https://aviation-edge.com/v2/public/airplaneDatabase?key=${ctx.api_key}`).then(function (data) {
+            console.log("Airplane Dataset --> Online");
+            loadAirplaneData(data)
+        });
+    }
+}
+var loadAirplaneData = function (data) {
+    // console.log(data)
+    //planeStatus, planeModel, planeAge, hexIcaoAirplane, codeIataAirline
+    for (var j = 0; j < data.length; j++) {
+        var tmp = {}
+        if (data[j]['planeStatus'] === 'active') {
+            tmp['planeAge'] = data[j]['planeAge'];
+            tmp['enginesCount'] = data[j]['enginesCount'];
+            tmp['airplaneId'] = data[j]['airplaneId'];
+            tmp['productionLine'] = data[j]['productionLine'];
+            tmp['numberRegistration'] = data[j]['numberRegistration'];
+            tmp['planeModel'] = data[j]['planeModel'];
+            tmp['codeIataAirline'] = data[j]['codeIataAirline'];
+            tmp['hexIcaoAirplane'] = data[j]['hexIcaoAirplane'];
+            for (var i = 0; i < ctx.planeRegisterNum.length; i++) {
+                if (tmp['numberRegistration'] === ctx.planeRegisterNum[i]) {
+                    ctx.airplaneDataset.push(tmp);
+                }
+            }
 
+        }
+    }
+    // plotAirplaneBarchart();
+}
+
+var plotAirplaneBarchart = function () {
+    console.log(ctx.airplaneDataset);
+    var vlSpec2 = {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.1.1..json",
+        "description": "A barchart",
+        "width": 300,
+        "height": 350,
+        "config": {
+            "axis": {
+                "labelFont": "Lucida Bright",
+                "titleFont": "Lucida Bright",
+                "labelColor": "#bdbdbd",
+                "tickColor": "#bdbdbd",
+                "titleColor": "#bdbdbd",
+                "labelFontSize": 18,
+            },
+            "legend": {
+                "disable": true,
+                "titleColor": "#bdbdbd",
+                "labelColor": "#bdbdbd"
+            }
+        },
+        "data": {
+            "values": ctx.airplaneDataset
+        },
+        "transform": [
+            {
+                "aggregate": [{
+                    "op": "count",
+                    "field": "productionLine",
+                    "as": "AirlineModel",
+                }],
+                "groupby": ["productionLine"]
+            }
+        ],
+        "mark": "bar",
+        "background": '#292d3a',
+        "encoding": {
+            "y": {
+                "field": "AirlineModel",
+                "type": "quantitative",
+                "title": "Count of Airplanes"
+            },
+            "x": {
+                "field": "productionLine",
+                "type": "nominal",
+                "title": "Airplane Model"},
+            "color": {
+                "field": "productionLine",
+                "scale": {
+                    "range": ["#9a9dab", "#9a9dab"]}
+            }
+        }
+    }
+    vegaEmbed("#airplaneModel_barchart", vlSpec2);
+}
 
 var loadAirPlanes = function (newSVG) {
     if (ctx.planes_bool) {
@@ -485,6 +598,7 @@ var loadAirPlanes = function (newSVG) {
 
     }
 }
+
 var updateAirports = function () {
     // console.log(ctx.final_airportlist)
     var airportSelection = d3.select("g#airports")
@@ -500,15 +614,165 @@ var updateAirports = function () {
         .attr("xlink:href", "resources/img/white_dot.png")
 }
 
-var updatePlanes = function () {
-    // console.log(ctx.currentFlights)
+var loadRoutes = function (airlineICAO) {
+    // http://aviation-edge.com/v2/public/routes?key=[API_KEY]&airlineIcao=BMS
+    console.log("LoadRoutes was called...");
 
+    var airline_routes_JSON = d3.json(`http://aviation-edge.com/v2/public/routes?key=${ctx.api_key}&airlineIcao=${airlineICAO}`);
+    var cities_JSON = d3.json(`resources/data/cityDatabase.json`);
+    var data4fetch = [cities_JSON, airline_routes_JSON];
+    Promise.all(data4fetch).then(function(d) {
+        restructureData(d[0], d[1]);
+        createGraphLayout();
+    });
+
+}
+
+var restructureData = function(cities, routes){
+    var connected = {};
+    routes.forEach(
+        function(d){
+            // console.log(d)
+            if (isNaN(d.departureIata.charAt(0)) && isNaN(d.arrivalIata.charAt(0))){
+
+                var timeStart = 0;
+                var timeEnd = 0;
+                //create date format
+                if (d.departureTime != null && d.arrivalTime != null) {
+                    timeStart = parseInt(d.departureTime.split(':')[0]);
+                    timeEnd = parseInt(d.arrivalTime.split(':')[0]);
+                }
+
+                var hourDiff = Math.abs(timeEnd - timeStart);
+
+                ctx.links.push({source: d.departureIata, target: d.arrivalIata, value: hourDiff});
+                connected[d.departureIata] = 1;
+                connected[d.arrivalIata] = 1;
+            }
+        }
+    );
+    ctx.wScale = d3.scaleLinear().domain([ctx.MIN_COUNT,
+        d3.max(ctx.links, function(d){return d.value;})])
+        .range([1, 10]);
+    // console.log(connected);
+    cities.forEach(
+        function(d) {
+            // console.log(d);
+            if (d.codeIataCity != null) {
+                if (d.codeIataCity in connected) {
+                    var coords = PROJECTIONS.ER([d.longitudeCity, d.latitudeCity]);
+                    if (!coords) {
+                        // handle specific case of San Juan (SJU),
+                        // which is out of bounds for the Albers projection
+                        coords = [ctx.w - 10, ctx.h - 10];
+                    }
+                    console.log("Node was added...")
+                    ctx.nodes.push({
+                        id: d.codeIataCity,
+                        country: d.codeIso2Country,
+                        city: d.nameCity,
+                        lonlat: coords
+                    });
+                }
+            } else {
+                // console.log("INjo");
+                // console.log(d);
+            }
+        }
+    );
+    // console.log(ctx.nodes);
+};
+
+// GMT: "-5"
+// cityId: 9368
+// codeIataCity: "ZZV"
+// codeIso2Country: "US"
+// geonameId: 4509177
+// latitudeCity: 39.933334
+// longitudeCity: -82.01667
+// nameCity: "Zanesville"
+// timezone: "America/New_York"
+
+var createGraphLayout = function(){
+    var svg = d3.select("#live_map")
+    var color = d3.scaleOrdinal(d3.schemeAccent);
+    var lines =  svg.append("g")
+        .attr("id", "links")
+        .selectAll("path")
+        .data(ctx.links)
+        .enter()
+        .append("path")
+        .attr("stroke", "#fff")
+        .attr("opacity", ctx.LINK_ALPHA);
+
+    // var circles = ...;
+    var circles = svg.append("g")
+        .attr("id", "nodes")
+        .selectAll("circle")
+        .data(ctx.nodes)
+        .enter()
+        .append("circle")
+        .attr("r", 5)
+        .style("fill", "#73849d");
+
+    circles.append("title").text(function(d, i) {
+        return d["id"]+" (" + d["city"] +")"
+    });
+    // circles.call(d3.drag().on("start", (event, d) => startDragging(event, d))
+    //     .on("drag", (event, d) => dragging(event, d))
+    //     .on("end", (event, d) => endDragging(event, d)));
+
+    // console.log("Node: ");
+    // console.log(ctx.nodes);
+    // console.log("Edges: ");
+    // console.log(ctx.links);
+
+    d3.select("#links")
+        .transition()
+        .duration(ctx.ANIM_DURATION)
+        .attr("opacity", 0)
+        .on("end", function(d){updateGeoLinks();})
+        .transition()
+        .duration(ctx.ANIM_DURATION)
+        .attr("opacity", ctx.LINK_ALPHA);
+    d3.selectAll("#nodes circle")
+        .transition()
+        .duration(ctx.ANIM_DURATION)
+        .attr("cx", (d) => (d.lonlat[0]))
+        .attr("cy", (d) => (d.lonlat[1]))
+        .attr("r", ctx.NODE_SIZE_MAP);
+};
+
+var updateGeoLinks = function(){
+    d3.selectAll("#links path")
+        .attr("d", (d) => (getCurve(d.source.lonlat[0],
+            d.source.lonlat[1],
+            d.target.lonlat[0],
+            d.target.lonlat[1])));
+    // below: simpler version using <line> segments
+    // d3.selectAll("#links line")
+    //      .attr("x1", (d) => (d.source.lonlat[0]))
+    //      .attr("y1", (d) => (d.source.lonlat[1]))
+    //      .attr("x2", (d) => (d.target.lonlat[0]))
+    //      .attr("y2", (d) => (d.target.lonlat[1]));
+};
+
+var getCurve = function(x1, y1, x2, y2){
+    console.log((x1, y1, x2, y2))
+    var alpha = Math.atan2(y2-y1, x2-x1);
+    var ds = Math.sqrt(Math.pow((x2-x1),2)+Math.pow((y2-y1),2)) / 2.0;
+    var rho = ds / Math.cos(QUAD_ANGLE);
+    var cpx = x1 + rho*Math.cos(alpha+QUAD_ANGLE);
+    var cpy = y1 + rho*Math.sin(alpha+QUAD_ANGLE);
+    return `M${x1},${y1}Q${cpx},${cpy} ${x2},${y2}`;
+};
+
+var updatePlanes = function () {
     var planSelection = d3.select("g#planes")
         .selectAll("image")
         .data(ctx.liveFlights, function(d){
             return d['id']
         }).attr("opacity", 1);
-
 
     // Define the div for the tooltip
     var decription_div = d3.select("#svg_div").append("div")
@@ -523,6 +787,7 @@ var updatePlanes = function () {
         .attr("xlink:href", "/resources/img/plane_orange.png")
         //Our new hover effects
         .on('mouseover', function (d) {
+            // console.log(d)
             d3.select(this).transition()
                 .duration('500')
                 .attr('width', '16');
@@ -532,8 +797,7 @@ var updatePlanes = function () {
                 // .style("width", '79%')
                 // .attr("width", ctx.w)
                 .attr("text", ctx.current_alt)
-                .text("Altitude: " + d.fromElement.__data__.altitude + ", Origin: "
-                    + d.fromElement.__data__.original_country + ", ID: " + d.fromElement.__data__.id
+                .text("Origin: " + d.fromElement.__data__.original_country + ", ID: " + d.fromElement.__data__.id
                     + ", lat: " + d.fromElement.__data__.latitude  + ", lon: " + d.fromElement.__data__.longitude);
         })
         .on('mouseout', function (d, i) {
@@ -582,9 +846,6 @@ var getLastWeekTime = function (t) {
 }
 
 var getPlaneTransform = function(d) {
-    // console.log(d.lon);
-    // console.log(d.lat);
-    // console.log(d.bearing);
     var xy = PROJECTIONS.ER([d.longitude, d.latitude]);
     var sc = 4*ctx.scale;
     var x = xy[0] - sc;
@@ -608,9 +869,6 @@ var getToolTipTransform = function(coord) {
     return (ctx.scale == 1) ? t : t + ` scale(${ctx.scale})`;
 };
 
-var loadRoutes = function () {
-    console.log("will be added soon");
-}
 var setSampleSize = function(sample){
     // console.log(sample)
     ctx.available_planes_percentage = sample;
@@ -638,11 +896,41 @@ var handleKeyEventAirports = function () {
 var handleKeyEventRoutes = function () {
     ctx.routes_bool = true;
     console.log(ctx.routes_bool);
-    loadRoutes();
+    var airportsSelection = d3.select("g#airports");
+    airportsSelection.style("visibility", "hidden");
+    var planSelection = d3.select("g#planes");
+    planSelection.style("visibility", "hidden");
+    loadRoutes("THY");
+}
+
+function startDragging(event, node){
+    if (ctx.mapMode){return;}
+    if (!event.active){
+        simulation.alphaTarget(0.3).restart();
+    }
+    node.fx = node.x;
+    node.fy = node.y;
+}
+
+function dragging(event, node){
+    if (ctx.mapMode){return;}
+    node.fx = event.x;
+    node.fy = event.y;
+}
+
+function endDragging(event, node){
+    if (ctx.mapMode){return;}
+    if (!event.active){
+        simulation.alphaTarget(0);
+    }
+    // commenting the following lines out will keep the
+    // dragged node at its current location, permanently
+    // unless moved again manually
+    node.fx = null;
+    node.fy = null;
 }
 
 var updateAircraftTrajectory = function (aircraftTrajectoryDict) {
-
     // console.log(aircraftTrajectoryDict)
     var planSelection = d3.select("g#pathPoints")
         .selectAll("image")
@@ -736,88 +1024,15 @@ var loadFlightsByAirCrafts = function (aircrafticao24, begin_time, end_time) {
     // }).catch(function(error){console.log(error)});
 }
 
-var drawCirclesPath = function () {
-    // var path = d3.geoPath().projection(PROJECTIONS.ER)
-    // var link = {type: "LineString", coordinates: [[100, 60], [-60, -30]]} // Change these data to see ho the great circle reacts
-    // ctx.svg.append("path")
-    //     .attr("d", path(link))
-    //     .style("fill", "none")
-    //     .style("stroke", "#cb1717")
-    //     .style("stroke-width", 3)
+var drawCirclesPath = function (coord1, coord2) {
+    var path = d3.geoPath().projection(PROJECTIONS.ER)
+    var link = {type: "LineString", coordinates: [coord1, coord2]} // Change these data to see ho the great circle reacts
+    ctx.svg.append("path")
+        .attr("d", path(link))
+        .style("fill", "none")
+        .style("stroke", "#2e7bd9")
+        .style("stroke-width", 3)
 }
-// var updateCountries = function (newSvg) {
-//
-//     // # masalan vaghti mouse ro mibari ro country tooltip neshoon bede (# available planes and these stuffo neshoon bede)
-//     var countrySelection = d3.select("g#countries")
-//         .selectAll("image");
-//     countrySelection.on('mouseover', function (d) {
-//         d3.select(this).transition()
-//             .duration('500')
-//             .attr('width', '16');
-//         decription_div.transition()
-//             .duration(100)
-//             .style("opacity", 0.6)
-//             // .style("width", '79%')
-//             // .attr("width", ctx.w)
-//             .attr("text", ctx.current_alt)
-//             .text("Altitude: " + d.fromElement.__data__.alt + ", Country: " + d.fromElement.__data__.original_country);
-//     })
-//         .on('mouseout', function (d, i) {
-//             d3.select(this).transition()
-//                 .duration('500')
-//                 .attr('width', '12');
-//
-//             decription_div.transition()
-//                 .duration(100)
-//                 .style("opacity", 0);
-//         });
-// }
-
-
-
-// load from opensky
-// var loadAirPlanes = function (newSVG) {
-//     if (ctx.planes_bool) {
-        // d3.json(`https://opensky-network.org/api/states/all`).then(function (data) {
-//             console.log(data)
-//             var total_flights = data['state'].length
-//             console.log(total_flights)
-//             //Clear currentFlights
-//             var num = Math.floor((ctx.available_planes_percentage * total_flights)/100);
-//             ctx.liveFlights = []
-//             for (element in data['state']){
-//                 var tmp = {}
-//                 if (data["states"][element][5] != 0 && data["states"][element][6] != 0){
-//                     tmp['id'] = data["states"][element][0]
-//                     tmp['callsign'] = data["states"][element][1]
-//                     tmp['original_country'] = data["states"][element][2]
-//                     tmp['lon'] = data["states"][element][5]
-//                     tmp['lat'] = data["states"][element][6]
-//                     if (tmp['lon'] === null && tmp['lat'] === null) {
-//                         continue;
-//                     }
-//                     tmp['onground'] = data["states"][element][8]
-//                     tmp['bearing'] = data["states"][element][10]
-//                     tmp['alt'] = data["states"][element][13]
-//                     // TODO: Check if this attribute is correct ?
-//                     tmp['Symbol(vega_id)'] = data["states"][element][16]
-//
-//                     if (num-- > 0) {
-//                         ctx.liveFlights.push(tmp);
-//                     }
-//
-//                 }
-//             }
-//             vloadGroundDistribution(ctx.liveFlights)
-//             updatePlanes();
-//             // // active for moving planes
-//             // setInterval(function(){
-//             //     loadAirPlanes();
-//             //     console.log("Ran")
-//             // }, 10000);
-//         })
-//     }
-// }
 
 
 
