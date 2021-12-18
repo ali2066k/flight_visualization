@@ -287,10 +287,23 @@ function zoomed(event, d) {
     var scale = ctx.mapG.attr("transform");
     scale = scale.substring(scale.indexOf('scale(')+6);
     scale = parseFloat(scale.substring(0, scale.indexOf(')')));
+    console.log("Scale = " + scale);
     ctx.scale = 1 / scale;
     if (ctx.scale != 1){
         d3.selectAll("image")
             .attr("transform", (d) => (getPlaneTransform(d)));
+        d3.selectAll("#nodes circle")
+            .transition()
+            .duration(ctx.ANIM_DURATION)
+            .attr("transform", (d) => `translate(${d.lonlat[0]} ${d.lonlat[1]})` + ` scale(${ctx.scale})`)
+            // .attr("cx", (d) => (d.lonlat[0]))
+            // .attr("cy", (d) => (d.lonlat[1]))
+            .attr("r", function (d) {
+                return nodescale(d.degree);
+            })
+        d3.select("#links line")
+            // .attr("stroke-width", (d) => (ctx.wScale(d.value)*(ctx.scale)));
+
     }
 }
 
@@ -514,7 +527,7 @@ var loadAirplaneData = function (data) {
 }
 
 var plotAirplaneBarchart = function () {
-    console.log(ctx.airplaneDataset);
+    // console.log(ctx.airplaneDataset);
     var vlSpec2 = {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.1.1..json",
         "description": "A barchart",
@@ -619,7 +632,7 @@ var loadRoutes = function (airlineICAO) {
     console.log("LoadRoutes was called...");
 
     var airline_routes_JSON = d3.json(`http://aviation-edge.com/v2/public/routes?key=${ctx.api_key}&airlineIcao=${airlineICAO}`);
-    var cities_JSON = d3.json(`resources/data/cityDatabase.json`);
+    var cities_JSON = d3.json(`resources/data/airportDatabase.json`);
     var data4fetch = [cities_JSON, airline_routes_JSON];
     Promise.all(data4fetch).then(function(d) {
         restructureData(d[0], d[1]);
@@ -628,49 +641,56 @@ var loadRoutes = function (airlineICAO) {
 
 }
 
-var restructureData = function(cities, routes){
+var restructureData = function(airports, routes){
     var connected = {};
+
     routes.forEach(
         function(d){
             // console.log(d)
-            if (isNaN(d.departureIata.charAt(0)) && isNaN(d.arrivalIata.charAt(0))){
+            if (d.departureIata != null && d.arrivalIata != null) {
+                if (isNaN(d.departureIata.charAt(0)) && isNaN(d.arrivalIata.charAt(0))) {
+                    var timeStart = 0;
+                    var timeEnd = 0;
+                    //create date format
+                    if (d.departureTime != null && d.arrivalTime != null) {
+                        timeStart = parseInt(d.departureTime.split(':')[0]);
+                        timeEnd = parseInt(d.arrivalTime.split(':')[0]);
+                    }
 
-                var timeStart = 0;
-                var timeEnd = 0;
-                //create date format
-                if (d.departureTime != null && d.arrivalTime != null) {
-                    timeStart = parseInt(d.departureTime.split(':')[0]);
-                    timeEnd = parseInt(d.arrivalTime.split(':')[0]);
+                    var hourDiff = timeEnd - timeStart;
+                    if (hourDiff < 0) {
+                        hourDiff = 24 - Math.abs(hourDiff)
+                    }
+                    ctx.links.push({source: d.departureIata, target: d.arrivalIata, value: hourDiff});
+                    connected[d.departureIata] = 1;
+                    connected[d.arrivalIata] = 1;
                 }
-
-                var hourDiff = Math.abs(timeEnd - timeStart);
-
-                ctx.links.push({source: d.departureIata, target: d.arrivalIata, value: hourDiff});
-                connected[d.departureIata] = 1;
-                connected[d.arrivalIata] = 1;
             }
         }
     );
-    ctx.wScale = d3.scaleLinear().domain([ctx.MIN_COUNT,
-        d3.max(ctx.links, function(d){return d.value;})])
-        .range([1, 10]);
+    ctx.wScale = d3.scaleLinear().domain([d3.min(ctx.links, function(d){return d.value*ctx.scale;}),
+        d3.max(ctx.links, function(d){return d.value*ctx.scale;})])
+        .range([0.1, 10]);
     // console.log(connected);
-    cities.forEach(
+    airports.forEach(
         function(d) {
             // console.log(d);
-            if (d.codeIataCity != null) {
-                if (d.codeIataCity in connected) {
-                    var coords = PROJECTIONS.ER([d.longitudeCity, d.latitudeCity]);
+            //isNaN(d.iata.charAt(0)) && d.iata in connected
+            if (d.codeIataAirport != null) {
+                if (isNaN(d.codeIataAirport.charAt(0)) && d.codeIataAirport in connected) {
+                    var coords = PROJECTIONS.ER([d.longitudeAirport, d.latitudeAirport]);
                     if (!coords) {
                         // handle specific case of San Juan (SJU),
                         // which is out of bounds for the Albers projection
-                        coords = [ctx.w - 10, ctx.h - 10];
+                        coords = [ctx.w, ctx.h];
                     }
-                    console.log("Node was added...")
+                    // console.log("Node was added...")
                     ctx.nodes.push({
-                        id: d.codeIataCity,
-                        country: d.codeIso2Country,
-                        city: d.nameCity,
+                        id: d.codeIataAirport,
+                        city_id: d.codeIataCity,
+                        airport_name: d.nameAirport,
+                        country_code: d.codeIso2Country,
+                        country_name: d.nameCountry,
                         lonlat: coords
                     });
                 }
@@ -678,54 +698,86 @@ var restructureData = function(cities, routes){
                 // console.log("INjo");
                 // console.log(d);
             }
-        }
-    );
+        });
+
+    // console.log("Node: ");
     // console.log(ctx.nodes);
+    // console.log("Edges: ");
+    // console.log(ctx.links);
 };
 
-// GMT: "-5"
-// cityId: 9368
-// codeIataCity: "ZZV"
-// codeIso2Country: "US"
-// geonameId: 4509177
-// latitudeCity: 39.933334
-// longitudeCity: -82.01667
-// nameCity: "Zanesville"
-// timezone: "America/New_York"
-
 var createGraphLayout = function(){
-    var svg = d3.select("#live_map")
+    var svg = d3.select("#map")
     var color = d3.scaleOrdinal(d3.schemeAccent);
-    var lines =  svg.append("g")
+    var lines = svg.append("g")
         .attr("id", "links")
-        .selectAll("path")
+        .attr("opacity", ctx.LINK_ALPHA)
+        .selectAll("line")  // simpler version uses <line>
         .data(ctx.links)
         .enter()
-        .append("path")
-        .attr("stroke", "#fff")
-        .attr("opacity", ctx.LINK_ALPHA);
+        .append("line")    // simpler version uses <line>
+        .attr("stroke-width", (d) => (ctx.wScale(d.value)/5));
 
-    // var circles = ...;
     var circles = svg.append("g")
         .attr("id", "nodes")
         .selectAll("circle")
         .data(ctx.nodes)
         .enter()
         .append("circle")
-        .attr("r", 5)
-        .style("fill", "#73849d");
+        .attr("r", ctx.NODE_SIZE_NL)
+        .attr("fill", (d) => (color(d.group)));
 
-    circles.append("title").text(function(d, i) {
-        return d["id"]+" (" + d["city"] +")"
-    });
-    // circles.call(d3.drag().on("start", (event, d) => startDragging(event, d))
-    //     .on("drag", (event, d) => dragging(event, d))
-    //     .on("end", (event, d) => endDragging(event, d)));
+    circles.append("title")
+        .text(function(d) { return d.airport_name + " (" + d.id + ", " + d.country_name +")"; });
+
+    circles.call(d3.drag().on("start", (event, d) => startDragging(event, d))
+        .on("drag", (event, d) => dragging(event, d))
+        .on("end", (event, d) => endDragging(event, d)));
 
     // console.log("Node: ");
     // console.log(ctx.nodes);
     // console.log("Edges: ");
     // console.log(ctx.links);
+
+    simulation.nodes(ctx.nodes)
+        .on("tick", simStep);
+
+    simulation.force("link")
+        .links(ctx.links);
+
+    function simStep(){
+        // code run at each iteration of the simulation
+        updateNLLinks();
+        circles.attr("cx", (d) => (d.x))
+            .attr("cy", (d) => (d.y));
+    }
+    // Add degree
+    d3.selectAll('#nodes circle')
+        .each(function(d) {
+            d.degree = 0;
+        });
+
+    // Calculate degree
+    ctx.links.forEach(function (d) {
+        d.source.degree += 1;
+        d.target.degree += 1;
+    });
+
+    // Accessor functions to get min & max
+    var minDegree = d3.min((ctx.nodes), function (d) {
+        return d.degree;
+    })
+
+    var maxDegree = d3.max((ctx.nodes), function (d) {
+        return d.degree;
+    })
+
+    // Create node scale based on degree
+    var nodescale = d3.scaleSqrt()
+        .domain([minDegree, maxDegree])
+        .range([1, 3]); // Change this to your desired range
+
+    simulation.stop();
 
     d3.select("#links")
         .transition()
@@ -734,37 +786,53 @@ var createGraphLayout = function(){
         .on("end", function(d){updateGeoLinks();})
         .transition()
         .duration(ctx.ANIM_DURATION)
-        .attr("opacity", ctx.LINK_ALPHA);
+        .attr("opacity", ctx.LINK_ALPHA)
+        .attr("stroke", "#fff");
     d3.selectAll("#nodes circle")
         .transition()
         .duration(ctx.ANIM_DURATION)
-        .attr("cx", (d) => (d.lonlat[0]))
-        .attr("cy", (d) => (d.lonlat[1]))
-        .attr("r", ctx.NODE_SIZE_MAP);
+        .attr("transform", (d) => `translate(${d.lonlat[0]} ${d.lonlat[1]})`)
+        .attr("fill", "#e05e26")
+        // .attr("cx", (d) => (d.lonlat[0]))
+        // .attr("cy", (d) => (d.lonlat[1]))
+        .attr("r", function (d) {
+            return nodescale(d.degree);
+        })
+
+
+
 };
 
 var updateGeoLinks = function(){
-    d3.selectAll("#links path")
-        .attr("d", (d) => (getCurve(d.source.lonlat[0],
-            d.source.lonlat[1],
-            d.target.lonlat[0],
-            d.target.lonlat[1])));
+    // d3.selectAll("#links path")
+    //     .attr("d", (d) => (drawCirclesPath(d.source.lonlat,
+    //         d.target.lonlat)));
     // below: simpler version using <line> segments
-    // d3.selectAll("#links line")
-    //      .attr("x1", (d) => (d.source.lonlat[0]))
-    //      .attr("y1", (d) => (d.source.lonlat[1]))
-    //      .attr("x2", (d) => (d.target.lonlat[0]))
-    //      .attr("y2", (d) => (d.target.lonlat[1]));
+    d3.selectAll("#links line")
+         .attr("x1", (d) => (d.source.lonlat[0]))
+         .attr("y1", (d) => (d.source.lonlat[1]))
+         .attr("x2", (d) => (d.target.lonlat[0]))
+         .attr("y2", (d) => (d.target.lonlat[1]));
 };
 
 var getCurve = function(x1, y1, x2, y2){
-    console.log((x1, y1, x2, y2))
     var alpha = Math.atan2(y2-y1, x2-x1);
     var ds = Math.sqrt(Math.pow((x2-x1),2)+Math.pow((y2-y1),2)) / 2.0;
     var rho = ds / Math.cos(QUAD_ANGLE);
     var cpx = x1 + rho*Math.cos(alpha+QUAD_ANGLE);
     var cpy = y1 + rho*Math.sin(alpha+QUAD_ANGLE);
     return `M${x1},${y1}Q${cpx},${cpy} ${x2},${y2}`;
+};
+
+var updateNLLinks = function(){
+    // d3.selectAll("#links path")
+    //     .attr("d", (d) => (getCurve(d.source.x, d.source.y, d.target.x, d.target.y)));
+    // below: simpler version using <line> segments
+    d3.selectAll("#links line")
+      .attr("x1", (d) => (d.source.x))
+      .attr("y1", (d) => (d.source.y))
+      .attr("x2", (d) => (d.target.x))
+      .attr("y2", (d) => (d.target.y));
 };
 
 var updatePlanes = function () {
@@ -797,8 +865,7 @@ var updatePlanes = function () {
                 // .style("width", '79%')
                 // .attr("width", ctx.w)
                 .attr("text", ctx.current_alt)
-                .text("Origin: " + d.fromElement.__data__.original_country + ", ID: " + d.fromElement.__data__.id
-                    + ", lat: " + d.fromElement.__data__.latitude  + ", lon: " + d.fromElement.__data__.longitude);
+                .text("ID: " + d.fromElement.__data__.id);
         })
         .on('mouseout', function (d, i) {
             d3.select(this).transition()
@@ -860,6 +927,23 @@ var getPlaneTransform = function(d) {
     }
 };
 
+var getAirportTransform = function(d) {
+    // console.log(d);
+    if (d != null) {
+        var xy = PROJECTIONS.ER([d.lonlat[0], d.lonlat[1]]);
+        console.log("XY: " + xy);
+        var sc = 4 * ctx.scale;
+        var x = xy[0] + sc;
+        var y = xy[1] + sc;
+        var t = `translate(${x} ${y})`;
+        // console.log((ctx.scale == 1) ? t : t + ` scale(${ctx.scale})`)
+        return (ctx.scale == 1) ? t : t + ` scale(${ctx.scale})`;
+    }
+    else {
+        console.log(d)
+    }
+};
+
 var getToolTipTransform = function(coord) {
     var xy = PROJECTIONS.ER([coord[0], coord[1]]);
     var sc = 4*ctx.scale;
@@ -904,7 +988,7 @@ var handleKeyEventRoutes = function () {
 }
 
 function startDragging(event, node){
-    if (ctx.mapMode){return;}
+    if (true){return;}
     if (!event.active){
         simulation.alphaTarget(0.3).restart();
     }
@@ -913,13 +997,13 @@ function startDragging(event, node){
 }
 
 function dragging(event, node){
-    if (ctx.mapMode){return;}
+    if (true){return;}
     node.fx = event.x;
     node.fy = event.y;
 }
 
 function endDragging(event, node){
-    if (ctx.mapMode){return;}
+    if (true){return;}
     if (!event.active){
         simulation.alphaTarget(0);
     }
