@@ -29,17 +29,17 @@
                         <input type="radio" name="radio" class="radioBtn" onclick="handleKeyEventPlanes();" checked>
                         <label data-text="Option 1" class="label_class">Planes</label>
                         <br/>
-                        <input type="radio" name="radio" class="radioBtn" onclick="handleKeyEventRoutes();">
-                        <label data-text="Option 2" class="label_class">Routes</label>
-                        <br/>
                         <input type="radio" name="radio" class="radioBtn" onclick="handleKeyEventAirports();">
                         <label data-text="Option 3" class="label_class">Airports</label>
+                        <br/>
+                        <input type="radio" name="radio" class="radioBtn" onclick="handleKeyEventRoutes();">
+                        <label data-text="Option 2" class="label_class">Routes</label>
                     </div>
 
-                    <div id="airline_selection_div" class="hor_widgets_element_textBox">
-                        <input list="airlines-list" type="text" onclick="">
-                        <datalist id="airlines-list">
-                            <option value="Ali"/>
+                    <div id="airline_selection_div" class="hor_widgets_element_textBox" onclick="">
+                        <input id="list_airlines_input" class="input_text_box" list="airlines_list" type="text" value="UAE">
+                        <datalist id="airlines_list">
+                            <option value="Test"/>
                         </datalist>
                     </div>
 

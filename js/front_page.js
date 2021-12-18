@@ -199,7 +199,7 @@ var loadGeo = function(newSVG){
         loadAirportDataset();
         loadAirlinesDataset();
         loadAirplaneDataset();
-        drawCirclesPath();
+        // drawCirclesPath();
         // loadTrackByAirCrafts("4bb18b", "1637882831");
         // loadFlightsByAirCrafts("344649", 1636673231-604800, 1636673231);
     }).catch(function(error){console.log(error)});
@@ -364,7 +364,13 @@ var loadAirlinesData = function (data) {
             return el['statusAirline'] === "active";
         }
     );
-    // ctx.final_airlines = newAirlinesArray;
+    newAirlinesArray = data.filter(function (el)
+        {
+            return el['sizeAirline'] != 0;
+        }
+    );
+
+    ctx.final_airlines = newAirlinesArray;
     var airlineNumber_label = d3.select("#number_of_airlines_pl");
     airlineNumber_label.html(newAirlinesArray.length);
     plotAirlineDatasets(newAirlinesArray);
@@ -1054,24 +1060,34 @@ var handleKeyEventRoutes = function () {
     airportsSelection.style("visibility", "hidden");
     var planSelection = d3.select("g#planes");
     planSelection.style("visibility", "hidden");
-    loadRoutes("THY");
+    loadRoutes(document.getElementById("list_airlines_input").value);
     var routesNodeSelection = d3.selectAll("g#nodes");
     routesNodeSelection.style("visibility", "visible");
     var routesLinkSelection = d3.selectAll("#links");
     routesLinkSelection.style("visibility", "visible");
+    handleDropDownListEvent();
 }
 
 var handleDropDownListEvent = function () {
-    console.log("DropDownList")
-    var list_items = d3.select("airlines-list");
-    list_items.selectAll("option")
-        .data(ctx.final_airlines)
+    var list_items = d3.select("airlines_list");
+
+    // list_items.on("change", function(d) {
+    //         var value = d3.select(this).property("value");
+    //         alert(value);
+    // });
+    // console.log(list_items)
+    // console.log(ctx.final_airlines)
+
+    list_items.selectAll("option").data(ctx.final_airlines)
         .enter()
         .append("option")
         .attr("value", function(d) {
-            console.log(d)
+            console.log(d["codeIcaoAirline"]);
+            return d["codeIcaoAirline"];
+        })
+        .text(function(d) {
+            return d["nameAirline"];
         });
-
 }
 
 var addOption = function () {
