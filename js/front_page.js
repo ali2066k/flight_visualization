@@ -1062,6 +1062,7 @@ var handleKeyEventRoutes = function () {
 }
 
 var handleDropDownListEvent = function () {
+    console.log("DropDownList")
     var list_items = d3.select("airlines-list");
     list_items.selectAll("option")
         .data(ctx.final_airlines)
@@ -1073,6 +1074,11 @@ var handleDropDownListEvent = function () {
 
 }
 
+var addOption = function () {
+    // var list_items = d3.select("airlines-list");
+    // list_items.appendChild(new Option(inputBox.value,inputBox.value));
+    // inputBox.value = "";
+}
 
 function startDragging(event, node){
     if (true){return;}
