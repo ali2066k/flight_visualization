@@ -155,6 +155,17 @@ body {
     background: #4d535e;
     margin-top: 5px;
 }
+
+.hor_widgets_element_textBox {
+    font-size: larger;
+    font-family: Lucida Bright;
+    display: block;
+    color: #e7e7e7;
+    background: #4d535e;
+    margin-top: 5px;
+    width: inherit;
+}
+
 .hor_widgets_element:hover {
     display: block;
     background: #464b56;

@@ -309,8 +309,8 @@ function zoomed(event, d) {
 
 var loadFlightData = function(data){
     var total_flights = data.length
-    var flightNumber_label = d3.select("#number_of_flights_pl");
-    flightNumber_label.html(total_flights);
+
+
 
     // console.log(total_flights)
     //Clear currentFlights
@@ -339,6 +339,8 @@ var loadFlightData = function(data){
         }
         // console.log(tmp)
     }
+    var flightNumber_label = d3.select("#number_of_flights_pl");
+    flightNumber_label.html(ctx.liveFlights.length);
 };
 
 var loadAirlinesDataset = function () {
@@ -373,11 +375,57 @@ var plotAirlineDatasets = function (airlinesArray) {
         return b.sizeAirline - a.sizeAirline
     });
     // console.log(airlinesArray.slice(0, 15));
-    var vlSpec2 = {
-        "$schema": "https://vega.github.io/schema/vega-lite/v5.1.1..json",
-        "description": "A barchart",
+    // var vlSpec2 = {
+    //     "$schema": "https://vega.github.io/schema/vega-lite/v5.1.1..json",
+    //     "description": "A barchart",
+    //     "width": 300,
+    //     "height": 350,
+    //     "config": {
+    //         "axis": {
+    //             "labelFont": "Lucida Bright",
+    //             "titleFont": "Lucida Bright",
+    //             "labelColor": "#bdbdbd",
+    //             "tickColor": "#bdbdbd",
+    //             "titleColor": "#bdbdbd",
+    //             "labelFontSize": 18,
+    //         },
+    //         "legend": {
+    //             "disable": true,
+    //             "titleColor": "#bdbdbd",
+    //             "labelColor": "#bdbdbd"
+    //         }
+    //     },
+    //     "data": {
+    //         "values": airlinesArray.slice(0, 10)
+    //     },
+    //     "mark": "bar",
+    //     "background": '#292d3a',
+    //     "encoding": {
+    //         "x": {
+    //             "field": "nameAirline",
+    //             "title": "Airlines",
+    //             "sort": "-y"
+    //         },
+    //         "y": {
+    //             "field": "sizeAirline",
+    //             "type": "quantitative",
+    //             "title": "Fleet Size"},
+    //         "color": {
+    //             "field": "sizeAirline",
+    //             "scale": {
+    //                 "range": ["#9a9dab", "#9a9dab"]}
+    //         }
+    //     }
+    // }
+
+    vlSpec2 = {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "description": "Bar Chart with a spacing-saving y-axis",
+        "data": {
+                "values": airlinesArray.slice(0, 12)
+        },
         "width": 300,
-        "height": 350,
+        "height": 380,
         "config": {
             "axis": {
                 "labelFont": "Lucida Bright",
@@ -385,7 +433,7 @@ var plotAirlineDatasets = function (airlinesArray) {
                 "labelColor": "#bdbdbd",
                 "tickColor": "#bdbdbd",
                 "titleColor": "#bdbdbd",
-                "labelFontSize": 18,
+                "labelFontSize": 12,
             },
             "legend": {
                 "disable": true,
@@ -393,27 +441,43 @@ var plotAirlineDatasets = function (airlinesArray) {
                 "labelColor": "#bdbdbd"
             }
         },
-        "data": {
-            "values": airlinesArray.slice(0, 10)
-        },
-        "mark": "bar",
+        "mark": {"type": "bar", "yOffset": 5, "cornerRadiusEnd": 2, "height": {"band": 0.5}},
         "background": '#292d3a',
         "encoding": {
             "x": {
-                "field": "nameAirline",
-                "title": "Airlines"
-            },
-            "y": {
                 "field": "sizeAirline",
                 "type": "quantitative",
-                "title": "Fleet Size"},
+                "title": "Fleet Size",
+                "axis": {
+                    "bandPosition": 0,
+                    "grid": true,
+                    "gridColor": "#575757",
+                    "domain": false,
+                    "ticks": false,
+                    "labelAlign": "left",
+                    "labelBaseline": "middle",
+                    "labelPadding": 7,
+                    "labelOffset": -15,
+                    "titleX": 100,
+                    "titleY": 23,
+                    "titleAngle": 0,
+                    "titleAlign": "left"
+                }
+            },
+            "y": {
+                "field": "nameAirline",
+                "title": "Airlines",
+                "sort": "-x"
+            },
             "color": {
                 "field": "sizeAirline",
                 "scale": {
-                    "range": ["#9a9dab", "#9a9dab"]}
+                    "range": ["#9a9dab", "#9a9dab"]
+                }
             }
         }
     }
+
     vegaEmbed("#airline_barchart", vlSpec2);
 }
 
@@ -608,8 +672,9 @@ var loadAirPlanes = function (newSVG) {
                 // }, 10000);
             });
         }
-
     }
+    var flightNumber_label = d3.select("#number_of_flights_pl");
+    flightNumber_label.html(ctx.liveFlights.length);
 }
 
 var updateAirports = function () {
@@ -623,7 +688,7 @@ var updateAirports = function () {
     airportSelection.enter()
         .append("image")
         .attr("transform", (d) => (getPlaneTransform(d)))
-        .attr("width", 4)
+        .attr("width", 2)
         .attr("xlink:href", "resources/img/white_dot.png")
 }
 
@@ -798,9 +863,6 @@ var createGraphLayout = function(){
         .attr("r", function (d) {
             return nodescale(d.degree);
         })
-
-
-
 };
 
 var updateGeoLinks = function(){
@@ -964,6 +1026,10 @@ var handleKeyEventPlanes = function () {
     console.log(ctx.planes_bool);
     var airportsSelection = d3.select("g#airports");
     airportsSelection.style("visibility", "hidden");
+    var routesNodeSelection = d3.selectAll("#nodes circle");
+    routesNodeSelection.style("visibility", "hidden");
+    var routesLinkSelection = d3.selectAll("#links");
+    routesLinkSelection.style("visibility", "hidden");
     var planSelection = d3.select("g#planes");
     planSelection.style("visibility", "visible");
 
@@ -973,6 +1039,10 @@ var handleKeyEventAirports = function () {
     console.log(ctx.airports_bool);
     var planSelection = d3.select("g#planes");
     planSelection.style("visibility", "hidden");
+    var routesNodeSelection = d3.selectAll("#nodes circle");
+    routesNodeSelection.style("visibility", "hidden");
+    var routesLinkSelection = d3.selectAll("#links");
+    routesLinkSelection.style("visibility", "hidden");
     var airportsSelection = d3.select("g#airports");
     airportsSelection.style("visibility", "visible");
     loadAirports(ctx.airportInitialData);
@@ -985,7 +1055,24 @@ var handleKeyEventRoutes = function () {
     var planSelection = d3.select("g#planes");
     planSelection.style("visibility", "hidden");
     loadRoutes("THY");
+    var routesNodeSelection = d3.selectAll("g#nodes");
+    routesNodeSelection.style("visibility", "visible");
+    var routesLinkSelection = d3.selectAll("#links");
+    routesLinkSelection.style("visibility", "visible");
 }
+
+var handleDropDownListEvent = function () {
+    var list_items = d3.select("airlines-list");
+    list_items.selectAll("option")
+        .data(ctx.final_airlines)
+        .enter()
+        .append("option")
+        .attr("value", function(d) {
+            console.log(d)
+        });
+
+}
+
 
 function startDragging(event, node){
     if (true){return;}
