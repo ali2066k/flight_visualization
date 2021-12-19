@@ -5,6 +5,7 @@
         <title>Live Flight Tracking</title>
         <!-- https://d3js.org/ -->
         <script type="text/javascript" src="js/d3.v7.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/vega@5.20.2"></script>
         <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.1.1"></script>
         <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.18.2"></script>
@@ -19,9 +20,19 @@
 
             <div id="hor_widgets_left" class="hor_widgets">
                 <form>
+
+                    <div id="offline_online_choice" class="hor_widgets_element_2">
+                        <!-- Rounded switch -->
+                        <label data-text="Option 1" class="label_class_bigger">Online</label>
+                        <label class="switch">
+                            <input type="checkbox" onclick="handleKeyEventOnline()">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
                     <div id="plane_perc_div" class="hor_widgets_element">
                         <label data-text="Option 1" class="label_class_asli">Shown Percentage</label>
-                        <input type="range" step="10" min="10" max="100" value="100" class="slider" id="plane_percentage_slider" oninput="planePercentageOutputId.value = plane_percentage_slider.value; setSampleSize(plane_percentage_slider.value)">
+                        <input type="range" step="10" min="10" max="100" value="100" class="slider_2" id="plane_percentage_slider" oninput="planePercentageOutputId.value = plane_percentage_slider.value; setSampleSize(plane_percentage_slider.value)">
                         <output name="planePercentage" id="planePercentageOutputId" style="margin-left: 2px; font-size: 12px">100</output>
                     </div>
 
@@ -37,11 +48,33 @@
                     </div>
 
                     <div id="airline_selection_div" class="hor_widgets_element_textBox" onclick="">
-                        <input id="list_airlines_input" class="input_text_box" list="airlines_list" type="text" value="UAE">
+                        <label data-text="Option 1" class="label_class_airline">Select an Airline</label>
+                        <input id="list_airlines_input" class="input_text_box" list="airlines_list" type="text" value="UAE" onchange="handleKeyEventRoutes()">
                         <datalist id="airlines_list">
                             <option value="Test"/>
                         </datalist>
                     </div>
+
+                    <div id="label_number_of_Destinations" class="title_placard_numbers_left">
+
+                    </div>
+                    <div id="number_of_Destinations_pl" class="placard_numbers">
+
+                    </div>
+
+<!--                    <div id="label_age_of_airline" class="title_placard_numbers_left">-->
+
+<!--                    </div>-->
+<!--                    <div id="number_of_age_of_airline" class="placard_numbers">-->
+
+<!--                    </div>-->
+
+<!--                    <div id="label_fleet_size_airline" class="title_placard_numbers_left">-->
+
+<!--                    </div>-->
+<!--                    <div id="number_fleet_size_airline" class="placard_numbers">-->
+
+<!--                    </div>-->
 
 <!--                    <div id="plane_perc_div2" class="hor_widgets_element">-->
 <!--                        <span class="hor_widgets_texts">Shown Plane:</span>-->
@@ -94,13 +127,42 @@
             </div>
 
             <div id="chart_div" class="chart_container">
-                <div id="airline_barchart" class="chart_element_airline_bar">Airline Bar Chart</div>
                 <div id="inTheAir" class="chart_element_distribution">On ground distrib</div>
+                <div id="airline_barchart" class="chart_element_airline_bar">Airline Bar Chart</div>
             </div>
 
             <div id="second_row_div" class="chart_container_second_row">
-                <div id="airplaneModel_barchart" class="chart_element_airplaneModel_barchart">Airline Bar Chart</div>
-                <div id="graph_temp">Graph</div>
+
+                <div id="airportTraficTimeseries" class="airportTraficTimeseries_div">
+
+                    <input id="list_airports_input" class="input_text_box_airport" list="airports_list" type="text" value="LGW" onchange="handleKeyEventAirportInput()">
+                    <datalist id="airports_list">
+                        <option value="Test"/>
+                    </datalist>
+
+                    <input id="list_types_input" class="input_text_box_type" list="type_option_list" type="text" value="both">
+                    <datalist id="type_option_list">
+                        <option value="departure">Departure</option>
+                        <option value="arrival">Arrival</option>
+                        <option value="both" selected>Both</option>
+                    </datalist>
+
+                    <input id="from_date_input" class="input_date_box" type="date" value="2021-10-18"
+                           min="2020-10-01" max="2021-12-19">
+
+                    <input id="to_date_input" class="input_date_box" type="date" value="2021-11-18"
+                           min="2020-10-01" max="2021-12-19">
+
+                    <input id="search_timeseries_airports" class="search_btn" list="type_option_list" type="button" value="Search" onclick="handleKeyEventSearchAirportTraffic()">
+
+                    <div id="time_series_plot_airports_traffic" class="time_series_plot">
+
+                    </div>
+
+                </div>
+
+                <div id="speedAltitudeScatterPlot" class="scatterplot_speed_altitude">Speed Altitude</div>
+                <div id="airline_fleetAge_barchart" class="chart_element_airline_bar_fleetAge">Airline Bar Chart</div>
             </div>
 
         </div>

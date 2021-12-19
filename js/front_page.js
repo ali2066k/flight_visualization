@@ -1,14 +1,6 @@
 var ctx = {
     w: 810,
     h: 400,
-    // LA_MIN: 41.31,
-    // LA_MAX: 51.16,
-    // LO_MIN: -4.93,
-    // LO_MAX: 7.72,
-    LA_MIN: 1.31,
-    LA_MAX: 51.16,
-    LO_MIN: -14.93,
-    LO_MAX: 72.72,
     TRANSITION_DURATION: 1000,
     scale: 1,
     liveFlights: [],
@@ -34,7 +26,9 @@ var ctx = {
     final_airlines: [],
     airplaneDataset: [],
     final_airplanes: [],
-    planeRegisterNum: []
+    planeRegisterNum: [],
+    liveAirlines: [],
+    final_timeSeries_airports: []
 };
 
 
@@ -65,16 +59,9 @@ var simulation = d3.forceSimulation()
     .force("center", d3.forceCenter(ctx.w / 2, ctx.h / 2));
 
 var createViz = function() {
-
-    //
-    // Designing stuff
-
-    //
-
     d3.select("#main").attr("width", ctx.w);
     d3.select("#main").attr("height", ctx.h);
     d3.select("#main").attr("fill", "#000");
-
 
     var newSVG = d3.select("#svg_div").append("svg");
     ctx.svg = newSVG;
@@ -127,13 +114,23 @@ var loadNumbersPlacard = function () {
 
     var number_airlines = d3.select("#label_number_of_airlines");
     number_airlines.html("# Airlines")
+
+
+    var number_destinations = d3.select("#label_number_of_Destinations");
+    number_destinations.html("# Destinations");
+
+    var number_fleet_size = d3.select("#label_fleet_size_airline");
+    number_fleet_size.html("# Fleet Size");
+
+    var number_average_age = d3.select("#label_age_of_airline");
+    number_average_age.html("# Average Age");
 }
 
 var vloadGroundDistribution = function (data) {
     var vlSpec2 = {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.1.1..json",
         "description": "A barchart",
-        "height": 350,
+        "height": 332,
         "width": {"step": 40},
         "config": {
             "axis": {
@@ -199,6 +196,7 @@ var loadGeo = function(newSVG){
         loadAirportDataset();
         loadAirlinesDataset();
         loadAirplaneDataset();
+        handleKeyEventSearchAirportTraffic();
         // drawCirclesPath();
         // loadTrackByAirCrafts("4bb18b", "1637882831");
         // loadFlightsByAirCrafts("344649", 1636673231-604800, 1636673231);
@@ -275,6 +273,11 @@ var drawMap = function(countries, oceans, lakes, glaciers, rivers, svgEl){
         .attr("class", "pathPoint");
 
 
+    d3.select("#svg_div").append("div")
+        .attr("id", "div_tooltip")
+        .attr("class", "tooltip")
+        .style("opacity", 0.001);
+
     var zoom = d3.zoom()
         .scaleExtent([1, 40])
         .on("zoom", zoomed);
@@ -309,9 +312,6 @@ function zoomed(event, d) {
 
 var loadFlightData = function(data){
     var total_flights = data.length
-
-
-
     // console.log(total_flights)
     //Clear currentFlights
     var num = Math.floor((ctx.available_planes_percentage * total_flights)/100);
@@ -319,8 +319,16 @@ var loadFlightData = function(data){
     for (var i = 0; i < total_flights; i++) {
         var tmp = {}
         tmp['id'] = data[i]["flight"]['icaoNumber']
+        tmp['icao24'] = data[i]['aircraft']['icao24']
         tmp['origin'] = data[i]['departure']['iataCode']
         tmp['destination'] = data[i]["arrival"]['iataCode']
+        tmp['origin_icao'] = data[i]['departure']['icaoCode']
+        tmp['destination_icao'] = data[i]["arrival"]['icaoCode']
+        tmp['velocity'] = data[i]["speed"]['horizontal']
+        tmp['airline_code'] = data[i]["airline"]['icaoCode']
+        if (tmp['airline_code'] != null && tmp['airline_code'] !== "") {
+            ctx.liveAirlines.push(data[i]["airline"]['icaoCode'])
+        }
         tmp['longitude'] = data[i]["geography"]['longitude']
         tmp['latitude'] = data[i]["geography"]['latitude']
         if (tmp['longitude'] === null && tmp['latitude'] === null) {
@@ -341,6 +349,7 @@ var loadFlightData = function(data){
     }
     var flightNumber_label = d3.select("#number_of_flights_pl");
     flightNumber_label.html(ctx.liveFlights.length);
+    plotSpeedAltitude();
 };
 
 var loadAirlinesDataset = function () {
@@ -358,80 +367,206 @@ var loadAirlinesDataset = function () {
     }
 }
 
+var loadScheduledDataset = function () {
+    //http://aviation-edge.com/v2/public/flightsHistory?key=[API_KEY]&code=JFK&type=departure&date_from=YYYY-MM-DD&date_to=YYYY-MM-DD
+    var typeTraffic = document.getElementById("list_types_input").value;
+    var airportIATA = document.getElementById("list_airports_input").value;
+    var fromDate = document.getElementById("from_date_input").value;
+    var toDate = document.getElementById("to_date_input").value;
+
+    // console.log(`https://aviation-edge.com/v2/public/flightsHistory?key=${ctx.api_key}&code=${airportIATA}&type=departure&date_from=${fromDate}&date_to=${toDate}`);
+    // console.log(`https://aviation-edge.com/v2/public/flightsHistory?key=${ctx.api_key}&code=${airportIATA}&type=arrival&date_from=${fromDate}&date_to=${toDate}`);
+
+    if (ctx.using_archive) {
+        var promises_offline;
+        // console.log(typeTraffic)
+        if (typeTraffic === "both") {
+            promises_offline = [
+                d3.json(`resources/data/flightsHistory_arrival.json`),
+                d3.json(`resources/data/flightsHistory_arrival.json`)];
+        }
+        else if (typeTraffic === "arrival") {
+            promises_offline = [d3.json(`resources/data/flightsHistory_arrival.json`)];
+        } else if (typeTraffic === "departure") {
+            promises_offline = [d3.json(`resources/data/flightsHistory_arrival.json`)];
+        }
+
+        Promise.all(promises_offline).then(function (data) {
+            if (data.length == 2) {
+                var twoWayFlights = data[0].concat(data[1]);
+                loadScheduledData(twoWayFlights);
+            } else {
+                var oneWayflights = data;
+                loadScheduledData(oneWayflights);
+            }
+        });
+    } else {
+        var promises_online;
+        console.log("Fetching Data Online, it may takes some time...");
+        console.log(typeTraffic);
+        if (typeTraffic === "both") {
+            promises_online = [
+                d3.json(`https://aviation-edge.com/v2/public/flightsHistory?key=${ctx.api_key}&code=${airportIATA}&type=departure&date_from=${fromDate}&date_to=${toDate}`),
+                d3.json(`https://aviation-edge.com/v2/public/flightsHistory?key=${ctx.api_key}&code=${airportIATA}&type=arrival&date_from=${fromDate}&date_to=${toDate}`)];
+        }
+        else if (typeTraffic === "arrival") {
+            promises_online = [d3.json(`https://aviation-edge.com/v2/public/flightsHistory?key=${ctx.api_key}&code=${airportIATA}&type=arrival&date_from=${fromDate}&date_to=${toDate}`)];
+        } else if (typeTraffic === "departure") {
+            promises_online = [d3.json(`https://aviation-edge.com/v2/public/flightsHistory?key=${ctx.api_key}&code=${airportIATA}&type=departure&date_from=${fromDate}&date_to=${toDate}`)];
+        }
+
+        Promise.all(promises_online).then(function (data) {
+            if (data.length == 2) {
+                var twoWayFlights = data[0].concat(data[1]);
+                loadScheduledData(twoWayFlights);
+            } else {
+                var oneWayflights = data;
+                loadScheduledData(oneWayflights);
+            }
+        });
+    }
+
+}
+
+var loadScheduledData = function (data) {
+    for (item in data) {
+        tmp = {};
+        tmp['dateTime'] = data[item][data[item]['type']]['actualTime'];
+        if (tmp['dateTime'] == null) continue;
+        let times = tmp['dateTime'].split('t');
+        tmp['date'] = times[0];
+        tmp['time'] = times[1];
+        if (data[item]['departure']['delay'] != null) {
+            tmp['delay'] = data[item]['departure']['delay'];
+        } else {
+            tmp['delay'] = 0;
+        }
+        tmp['status'] = data[item]['status'];
+        tmp['flight_icao'] = data[item]['flight']['icaoNumber'];
+        tmp['flight_iata'] = data[item]['flight']['iataNumber'];
+        // console.log(tmp);
+        ctx.final_timeSeries_airports.push(tmp);
+    }
+    plotAirportTrafficTimeSeries();
+}
+
+var plotAirportTrafficTimeSeries = function () {
+    // console.log(ctx.final_timeSeries_airports);
+    var vlSpec3 = {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.1.1..json",
+        "description": "A barchart",
+        "data": {
+            "values": ctx.final_timeSeries_airports
+        },
+        // "width": 500,
+        // "height": 300,
+        "config": {
+            "axis": {
+                "labelFont": "Lucida Bright",
+                "titleFont": "Lucida Bright",
+                "labelColor": "#bdbdbd",
+                "tickColor": "#bdbdbd",
+                "titleColor": "#bdbdbd",
+                "labelFontSize": 12,
+                "gridColor": "#474c62"
+            },
+            "legend": {
+                "disable": true,
+                "titleColor": "#bdbdbd",
+                "labelColor": "#bdbdbd"
+            }
+        },
+        // "mark": {
+        //     "type": "line",
+        //     "color": "#bdbdbd",
+        //     // "filled": false
+        // },
+        "encoding": {
+            "x": {
+                "timeUnit": "date",
+                "field": "date",
+                "type": "temporal",
+                "title": "Days"},
+        },
+        "background": '#292d3a',
+        "layer": [
+            {
+                "mark": {"stroke": "#ff4b4b", "type": "line"},
+                "encoding": {
+                    "y": {
+                        "aggregate": "count",
+                        "field": "date",
+                        "title": "Airport Traffic",
+                        "axis": {
+                            "titleColor":"#ff4b4b",
+                            "grid": true,
+                            "tickBand": "extent",
+                            "gridColor": "rgba(255,75,75,0.20)"
+                        }
+                    }
+                }
+            },
+            {
+                "mark": {"type": "line", "color": "#1bd7d7"},
+                "encoding": {
+                    "y": {
+                        "aggregate": "average",
+                        "field": "delay",
+                        "title": "Average Delay",
+                        "axis": {
+                            "titleColor":"#1bd7d7",
+                            "grid": true,
+                            "tickBand": "extent",
+                            "gridColor": "rgba(27,215,215,0.20)"
+                        }
+                    }
+                }
+            }
+        ],
+        "resolve": {"scale": {"y": "independent"}}
+    }
+    var vlOpts3 = {width:700, height:300, actions: true};
+    vegaEmbed("#time_series_plot_airports_traffic", vlSpec3, vlOpts3);
+}
+
 var loadAirlinesData = function (data) {
     var newAirlinesArray = data.filter(function (el)
         {
             return el['statusAirline'] === "active";
         }
     );
-    newAirlinesArray = data.filter(function (el)
+    newAirlinesArray = newAirlinesArray.filter(function (el)
         {
             return el['sizeAirline'] != 0;
         }
     );
-
+    // console.log(newAirlinesArray);
     ctx.final_airlines = newAirlinesArray;
     var airlineNumber_label = d3.select("#number_of_airlines_pl");
     airlineNumber_label.html(newAirlinesArray.length);
-    plotAirlineDatasets(newAirlinesArray);
+    plotAirlineFleetSizeDatasets(newAirlinesArray);
+    plotAirlineAgeDatasets(newAirlinesArray);
 }
 
-var plotAirlineDatasets = function (airlinesArray) {
+var plotAirlineFleetSizeDatasets = function (airlinesArray) {
     airlinesArray.sort(function(a,b) {
         return b.sizeAirline - a.sizeAirline
     });
-    // console.log(airlinesArray.slice(0, 15));
-    // var vlSpec2 = {
-    //     "$schema": "https://vega.github.io/schema/vega-lite/v5.1.1..json",
-    //     "description": "A barchart",
-    //     "width": 300,
-    //     "height": 350,
-    //     "config": {
-    //         "axis": {
-    //             "labelFont": "Lucida Bright",
-    //             "titleFont": "Lucida Bright",
-    //             "labelColor": "#bdbdbd",
-    //             "tickColor": "#bdbdbd",
-    //             "titleColor": "#bdbdbd",
-    //             "labelFontSize": 18,
-    //         },
-    //         "legend": {
-    //             "disable": true,
-    //             "titleColor": "#bdbdbd",
-    //             "labelColor": "#bdbdbd"
-    //         }
-    //     },
-    //     "data": {
-    //         "values": airlinesArray.slice(0, 10)
-    //     },
-    //     "mark": "bar",
-    //     "background": '#292d3a',
-    //     "encoding": {
-    //         "x": {
-    //             "field": "nameAirline",
-    //             "title": "Airlines",
-    //             "sort": "-y"
-    //         },
-    //         "y": {
-    //             "field": "sizeAirline",
-    //             "type": "quantitative",
-    //             "title": "Fleet Size"},
-    //         "color": {
-    //             "field": "sizeAirline",
-    //             "scale": {
-    //                 "range": ["#9a9dab", "#9a9dab"]}
-    //         }
-    //     }
-    // }
-
+    // console.log(airlinesArray);
+    var additionAirline;
+    for (item in airlinesArray) {
+        if (airlinesArray[item]['codeIcaoAirline'] === document.getElementById("list_airlines_input").value) {
+            additionAirline = airlinesArray[item];
+        }
+    }
     vlSpec2 = {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
         "description": "Bar Chart with a spacing-saving y-axis",
         "data": {
-                "values": airlinesArray.slice(0, 12)
+                "values": airlinesArray.slice(0, 11).concat(additionAirline)
         },
         "width": 300,
-        "height": 380,
+        "height": 342,
         "config": {
             "axis": {
                 "labelFont": "Lucida Bright",
@@ -468,7 +603,7 @@ var plotAirlineDatasets = function (airlinesArray) {
                     "titleY": 23,
                     "titleAngle": 0,
                     "titleAlign": "left"
-                }
+                },
             },
             "y": {
                 "field": "nameAirline",
@@ -485,6 +620,133 @@ var plotAirlineDatasets = function (airlinesArray) {
     }
 
     vegaEmbed("#airline_barchart", vlSpec2);
+}
+
+var plotAirlineAgeDatasets = function (airlinesArray) {
+    airlinesArray.sort(function(a,b) {
+        return b.sizeAirline - a.sizeAirline
+    });
+    var additionAirline;
+    for (item in airlinesArray) {
+        if (airlinesArray[item]['codeIcaoAirline'] === document.getElementById("list_airlines_input").value) {
+            additionAirline = airlinesArray[item];
+        }
+    }
+    vlSpec2 = {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "description": "Bar Chart with a spacing-saving y-axis",
+        "data": {
+            "values": airlinesArray.slice(0, 11).concat(additionAirline)
+        },
+        "width": 317,
+        "height": 342,
+        "config": {
+            "axis": {
+                "labelFont": "Lucida Bright",
+                "titleFont": "Lucida Bright",
+                "labelColor": "#bdbdbd",
+                "tickColor": "#bdbdbd",
+                "titleColor": "#bdbdbd",
+                "labelFontSize": 12,
+            },
+            "legend": {
+                "disable": true,
+                "titleColor": "#bdbdbd",
+                "labelColor": "#bdbdbd"
+            }
+        },
+        "mark": {"type": "bar", "yOffset": 5, "cornerRadiusEnd": 2, "height": {"band": 0.5}},
+        "background": '#292d3a',
+        "encoding": {
+            "x": {
+                "field": "ageFleet",
+                "type": "quantitative",
+                "title": "Airline Fleet Age",
+                "axis": {
+                    "bandPosition": 0,
+                    "grid": true,
+                    "gridColor": "#575757",
+                    "domain": false,
+                    "ticks": false,
+                    "labelAlign": "left",
+                    "labelBaseline": "middle",
+                    "labelPadding": 7,
+                    "labelOffset": -15,
+                    "titleX": 100,
+                    "titleY": 23,
+                    "titleAngle": 0,
+                    "titleAlign": "left"
+                },
+            },
+            "y": {
+                "field": "nameAirline",
+                "title": "Airlines",
+                "sort": "-x"
+            },
+            "color": {
+                "field": "ageFleet",
+                "scale": {
+                    "range": ["#9a9dab", "#9a9dab"]
+                }
+            }
+        }
+    }
+
+    vegaEmbed("#airline_fleetAge_barchart", vlSpec2);
+}
+
+var plotSpeedAltitude = function () {
+    console.log(ctx.liveFlights);
+    var vlSpec3 = {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.1.1..json",
+        "description": "A barchart",
+        "data": {
+            "values": ctx.liveFlights
+        },
+        "width": 300,
+        "height": 360,
+        "config": {
+            "axis": {
+                "labelFont": "Lucida Bright",
+                "titleFont": "Lucida Bright",
+                "labelColor": "#bdbdbd",
+                "tickColor": "#bdbdbd",
+                "titleColor": "#bdbdbd",
+                "labelFontSize": 12,
+                "gridColor": "#474c62"
+            },
+            "legend": {
+                "disable": false,
+                "titleColor": "#bdbdbd",
+                "labelColor": "#bdbdbd"
+            }
+        },
+        "mark": {
+            "type": "point",
+            "color": "#bdbdbd",
+            "filled": false
+        },
+        "background": '#292d3a',
+        "encoding": {
+            "x": {
+                "field": "altitude",
+                "type": "quantitative",
+                "title": "Altitude",
+                "scale": {
+                    "domainMin": 0
+                }
+            },
+            "y": {
+                "field": "velocity",
+                "type": "quantitative",
+                "title": "Velocity"
+            },
+            "shape": {"field": "onground", "type": "nominal"},
+            "color": {"field": "onground", "type": "nominal"}
+        }
+    }
+    var vlOpts3 = {width:331, height:330, actions: true};
+    vegaEmbed("#speedAltitudeScatterPlot", vlSpec3, vlOpts3);
 }
 
 var loadAirportDataset = function () {
@@ -510,6 +772,8 @@ var loadAirportData = function (data) {
             if (data[i]['codeIataCity'] === ctx.availableairports[j]['iata_code']) {
                 let tmp = {}
                 tmp['iata_code'] = data[i]['codeIataAirport'];
+                tmp['icao_code'] = data[i]['codeIcaoAirport'];
+                tmp['name_airport'] = data[i]['nameAirport'];
                 tmp['id'] = data[i]['airportId'];
                 tmp['original_country'] = data[i]['nameCountry'];
                 tmp['longitude'] = data[i]['longitudeAirport'];
@@ -659,8 +923,8 @@ var loadAirPlanes = function (newSVG) {
             d3.json(`resources/live_data/flights.json`).then(function (data) {
                 console.log("Airplanes Loading --> Offline");
                 // console.log(data);
-                loadFlightData(data)
-                vloadGroundDistribution(ctx.liveFlights)
+                loadFlightData(data);
+                vloadGroundDistribution(ctx.liveFlights);
                 updatePlanes();
             });
         }
@@ -669,7 +933,7 @@ var loadAirPlanes = function (newSVG) {
                 console.log("Airplanes Loading --> Online");
                 // console.log(data);
                 loadFlightData(data);
-                vloadGroundDistribution(ctx.liveFlights)
+                vloadGroundDistribution(ctx.liveFlights);
                 updatePlanes();
                 // // active for moving planes
                 // setInterval(function(){
@@ -709,7 +973,7 @@ var loadRoutes = function (airlineICAO) {
         restructureData(d[0], d[1]);
         createGraphLayout();
     });
-
+    loadAirlinesDataset();
 }
 
 var restructureData = function(airports, routes){
@@ -869,6 +1133,22 @@ var createGraphLayout = function(){
         .attr("r", function (d) {
             return nodescale(d.degree);
         })
+
+    var number_of_Destinations = d3.select("#number_of_Destinations_pl");
+    number_of_Destinations.html(ctx.nodes.length);
+
+    var number_of_age_airline = d3.select("#number_of_age_of_airline");
+    var number_of_fleet_size = d3.select("#number_fleet_size_airline");
+    for (item in ctx.final_airlines) {
+        if (ctx.final_airlines[item]['codeIcaoAirline'] === document.getElementById("list_airlines_input").value) {
+            number_of_age_airline.html(ctx.final_airlines[item]['ageFleet']);
+            number_of_fleet_size.html(ctx.final_airlines[item]['sizeAirline']);
+            break;
+        }
+    }
+
+
+
 };
 
 var updateGeoLinks = function(){
@@ -911,10 +1191,7 @@ var updatePlanes = function () {
         }).attr("opacity", 1);
 
     // Define the div for the tooltip
-    var decription_div = d3.select("#svg_div").append("div")
-        .attr("class", "tooltip")
-        .style("opacity", 0.001);
-
+    var decription_div = d3.select("#div_tooltip");
     planSelection.enter()
         .append("image")
         .attr("transform", (d) => (getPlaneTransform(d)))
@@ -933,7 +1210,11 @@ var updatePlanes = function () {
                 // .style("width", '79%')
                 // .attr("width", ctx.w)
                 .attr("text", ctx.current_alt)
-                .text("ID: " + d.fromElement.__data__.id);
+                .text("Registery Number: " + d.fromElement.__data__.plane_regNumber
+                            + ", Departure: " + d.fromElement.__data__.origin
+                                + ", Arrival: " + d.fromElement.__data__.destination
+                                    + ", Altitude: " + d.fromElement.__data__.altitude
+                                        + ", Velocity: " + d.fromElement.__data__.velocity);
         })
         .on('mouseout', function (d, i) {
             d3.select(this).transition()
@@ -949,7 +1230,7 @@ var updatePlanes = function () {
                 .duration('500')
                 .attr("xlink:href", "/resources/img/blue_plane.png");
               // console.log(d.path[0].__data__['id'])
-                loadFlightsByAirCrafts(d.path[0].__data__['id'], getLastWeekTime(), getYesterdayTime())
+                loadFlightsByAirCrafts(d.path[0].__data__['icao24'], getLastWeekTime(), getYesterdayTime(), d.path[0].__data__)
         });
     // TODO: Is not functional at the moment --> Track by flight
         // .on("click", function (d) {
@@ -1029,9 +1310,9 @@ var setSampleSize = function(sample){
 
 var handleKeyEventPlanes = function () {
     ctx.planes_bool = true;
-    console.log(ctx.planes_bool);
+    // console.log(ctx.planes_bool);
     var airportsSelection = d3.select("g#airports");
-    airportsSelection.style("visibility", "hidden");
+    airportsSelection.transition(10).style("visibility", "hidden");
     var routesNodeSelection = d3.selectAll("#nodes circle");
     routesNodeSelection.style("visibility", "hidden");
     var routesLinkSelection = d3.selectAll("#links");
@@ -1042,7 +1323,7 @@ var handleKeyEventPlanes = function () {
 }
 var handleKeyEventAirports = function () {
     ctx.airports_bool = true;
-    console.log(ctx.airports_bool);
+    // console.log(ctx.airports_bool);
     var planSelection = d3.select("g#planes");
     planSelection.style("visibility", "hidden");
     var routesNodeSelection = d3.selectAll("#nodes circle");
@@ -1054,12 +1335,17 @@ var handleKeyEventAirports = function () {
     loadAirports(ctx.airportInitialData);
 }
 var handleKeyEventRoutes = function () {
+
     ctx.routes_bool = true;
-    console.log(ctx.routes_bool);
+    // console.log(ctx.routes_bool);
     var airportsSelection = d3.select("g#airports");
     airportsSelection.style("visibility", "hidden");
     var planSelection = d3.select("g#planes");
     planSelection.style("visibility", "hidden");
+    d3.selectAll("g#nodes").remove();
+    d3.selectAll("#links").remove();
+    ctx.nodes = [];
+    ctx.links = [];
     loadRoutes(document.getElementById("list_airlines_input").value);
     var routesNodeSelection = d3.selectAll("g#nodes");
     routesNodeSelection.style("visibility", "visible");
@@ -1069,25 +1355,30 @@ var handleKeyEventRoutes = function () {
 }
 
 var handleDropDownListEvent = function () {
-    var list_items = d3.select("airlines_list");
 
-    // list_items.on("change", function(d) {
-    //         var value = d3.select(this).property("value");
-    //         alert(value);
-    // });
-    // console.log(list_items)
-    // console.log(ctx.final_airlines)
+    var list_items = $("#airlines_list");
 
-    list_items.selectAll("option").data(ctx.final_airlines)
-        .enter()
-        .append("option")
-        .attr("value", function(d) {
-            console.log(d["codeIcaoAirline"]);
-            return d["codeIcaoAirline"];
-        })
-        .text(function(d) {
-            return d["nameAirline"];
-        });
+    for (item in ctx.final_airlines) {
+        // console.log(item);
+        list_items.append("<option value='" + ctx.final_airlines[item].codeIcaoAirline + "'" + " class='option_element'" + ">" + ctx.final_airlines[item].nameAirline + "</option>");
+    }
+}
+
+var handleKeyEventAirportInput = function () {
+    var list_items = $("#airports_list");
+    for (item in ctx.final_airportlist) {
+        // console.log(ctx.final_airportlist[item]);
+        list_items.append("<option value='" + ctx.final_airportlist[item].iata_code + "'" + " class='option_element'" + ">" + ctx.final_airportlist[item].name_airport + "</option>");
+    }
+}
+
+var handleKeyEventSearchAirportTraffic = function () {
+    loadScheduledDataset();
+}
+
+var handleKeyEventOnline = function () {
+    if (ctx.using_archive == false) ctx.using_archive = true;
+    if (ctx.using_archive == true) ctx.using_archive = false;
 }
 
 var addOption = function () {
@@ -1177,44 +1468,69 @@ var loadTrackByAirCrafts = function (aircrafticao24, time) {
     // }
 }
 
-var loadFlightsByAirCrafts = function (aircrafticao24, begin_time, end_time) {
+var loadFlightsByAirCrafts = function (aircrafticao24, begin_time, end_time, aircraftOtherInfo) {
     // console.log(aircrafticao24 + " ||| " + time)
-    // d3.json(`https://opensky-network.org/api/flights/aircraft?icao24=${aircrafticao24}&begin=${begin_time}&end=${end_time}`).then(function (data) {
-    //     // console.log(data)
-    //
-    //     airports_list = [];
-    //     for (element in data) {
-    //         // console.log("inside_loop")
-    //         for (airport in ctx.availableairports) {
-    //             // console.log("inside_looper")
-    //             // console.log(ctx.availableairports[airport]['id'])
-    //             if (data[element]['estDepartureAirport'] === ctx.availableairports[airport]['id']) {
-    //                 // console.log(ctx.availableairports[airport]);
-    //                 airports_list.push(ctx.availableairports[airport])
-    //             }
-    //             else if (data[element]['estArrivalAirport'] === ctx.availableairports[airport]['id']) {
-    //                 // console.log(ctx.availableairports[airport]);
-    //                 airports_list.push(ctx.availableairports[airport])
-    //             }
-    //             else {
-    //                 // console.log("not found")
-    //             }
-    //         }
-    //     }
-    //
-    //     console.log(airports_list);
-    //     if (airports_list.length > 0) {
-    //         ctx.availableairports = airports_list;
-    //         ctx.airports_bool = true;
-    //         var planSelection = d3.select("g#planes");
-    //         planSelection.style("visibility", "hidden");
-    //         ctx.planes_bool = false;
-    //         updateAirports();
-    //         var airportsSelection = d3.select("g#airports");
-    //         airportsSelection.style("visibility", "visible");
-    //         console.log(ctx.availableairports)
-    //     }
-    // }).catch(function(error){console.log(error)});
+    d3.json(`https://opensky-network.org/api/flights/aircraft?icao24=${aircrafticao24}&begin=${begin_time}&end=${end_time}`).then(function (data) {
+        // console.log(data)
+
+        airports_list = [];
+        for (element in data) {
+            // console.log("inside_loop")
+            for (airport in ctx.availableairports) {
+                // console.log("inside_looper")
+                // console.log(ctx.availableairports[airport]['id'])
+                if (data[element]['estDepartureAirport'] === ctx.availableairports[airport]['id']) {
+                    // console.log(ctx.availableairports[airport]);
+                    airports_list.push(ctx.availableairports[airport])
+                }
+                else if (data[element]['estArrivalAirport'] === ctx.availableairports[airport]['id']) {
+                    // console.log(ctx.availableairports[airport]);
+                    airports_list.push(ctx.availableairports[airport])
+                }
+                else {
+                    // console.log("not found")
+                }
+            }
+        }
+
+        // console.log(airports_list);
+        if (airports_list.length > 0) {
+            ctx.final_airportlist = airports_list;
+            ctx.airports_bool = true;
+            var planSelection = d3.select("g#planes");
+            planSelection.style("visibility", "hidden");
+            ctx.planes_bool = false;
+            updateAirports();
+            var airportsSelection = d3.select("g#airports");
+            airportsSelection.style("visibility", "visible");
+            // console.log(ctx.final_airportlist)
+        }
+
+        var coords1;
+        var coords2;
+        console.log(aircraftOtherInfo)
+        // console.log(ctx.final_airportlist)
+        if (aircraftOtherInfo['destination_icao'] != null && aircraftOtherInfo['origin_icao'] != null) {
+            for (airport in ctx.availableairports) {
+                if (aircraftOtherInfo['origin_icao'] === ctx.availableairports[airport]['id']) {
+                    // console.log("Coord1 is found...");
+                    coords1 = [ctx.availableairports[airport]['longitude'], ctx.availableairports[airport]['latitude']];
+                    // console.log(coords1);
+                    continue;
+                }
+                if (aircraftOtherInfo['destination_icao'] === ctx.availableairports[airport]['id']) {
+                    // console.log("Coord2 is found...");
+                    coords2 = [ctx.availableairports[airport]['longitude'], ctx.availableairports[airport]['latitude']];
+                    // console.log(coords2);
+                    continue;
+                }
+            }
+        }
+        if (coords1 != null && coords2 != null) {
+            drawCirclesPath(coords1, coords2);
+        }
+
+    }).catch(function(error){console.log(error)});
 }
 
 var drawCirclesPath = function (coord1, coord2) {

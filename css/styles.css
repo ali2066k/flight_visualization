@@ -11,6 +11,8 @@ body {
     grid-auto-rows: minmax(auto, auto);
     position: absolute;
     grid-column-gap: 1px;
+    border:1px solid black;
+
 }
 .sphere {
     fill: #464646;
@@ -128,7 +130,7 @@ body {
 }
 
 
-.slider {
+.slider_2 {
     -webkit-appearance: none;  /* Override default CSS styles */
     margin-left: 8px;
     appearance: none;
@@ -143,7 +145,7 @@ body {
 }
 
 /* Mouse-over effects */
-.slider:hover {
+.slider_2:hover {
     opacity: 1; /* Fully shown on mouse-over */
 }
 
@@ -161,15 +163,56 @@ body {
     color: #e7e7e7;
     background: #4d535e;
     margin-top: 5px;
-    width: 98%;
+    width: 100%;
 }
 
 .input_text_box {
     padding-left: 2px;
-    background: rgba(148, 148, 148, 0.61);
+    background: #4d535e;
     font-family: Lucida Bright;
-    width: 98%;
+    color: #e7e7e7;
+    font-size: 16px;
+    width: 93%;
+    padding-top: 5px;
+    margin-top: 5px;
+    height: 35px;
+    height: fit-content;
 }
+
+.input_text_box_airport {
+    padding-left: 2px;
+    background: #4d535e;
+    font-family: Lucida Bright;
+    color: #e7e7e7;
+    font-size: 13px;
+    width: 28%;
+    height: fit-content;
+}
+.input_text_box_type {
+    padding-left: 2px;
+    background: #4d535e;
+    font-family: Lucida Bright;
+    color: #e7e7e7;
+    font-size: 13px;
+    width: 10%;
+    height: fit-content;
+    color: #e7e7e7;
+}
+
+.input_date_box {
+    background: #343949;
+    color: #e7e7e7;
+    font-family: Lucida Bright;
+    width: 20%;
+}
+
+.search_btn {
+    background: #343949;
+    color: #e7e7e7;
+    font-family: Lucida Bright;
+    width: 14%;
+}
+
 .hor_widgets_element:hover {
     display: block;
     background: #464b56;
@@ -179,6 +222,25 @@ body {
     margin-left: 10px;
     font-size: 12px;
     font-family: Consolas;
+
+}
+
+.label_class_bigger {
+    margin-left: 10px;
+    font-size: 16px;
+    padding-top: 5px;
+    margin-top: 15px;
+    alignment: left;
+    font-family: Consolas;
+
+}
+
+.option_element {
+    font-size: 12px;
+    background: #464b56;
+    font-family: Consolas;
+    width: fit-content;
+    height: 10px;
 }
 
 .label_class {
@@ -205,33 +267,43 @@ body {
     grid-column-gap: 1px;
     padding: 3px;
     color: #e7e7e7;
-    width: max-content;
+    width: fit-content;
     grid-column: 4;
 }
 
 .chart_element_airline_bar {
-    padding: 2px;
-    border:1px solid black;
-    grid-column: 1;
-    grid-row: 1;
-}
-.chart_element_distribution{
-    padding: 2px;
+    padding: 1px;
+    padding-top: 15px;
     border:1px solid black;
     grid-column: 2;
     grid-row: 1;
 }
 
+.scatterplot_speed_altitude {
+    padding: 2px;
+    padding-top: 20px;
+    alignment: top;
+    border:1px solid black;
+}
+
+.chart_element_distribution{
+    padding: 1px;
+    border:1px solid black;
+    grid-column: 1;
+    grid-row: 1;
+}
+
 .chart_container_second_row {
     display: grid;
-    grid-template-columns: repeat(4, auto);
+    grid-template-columns: repeat(3, auto);
     gap: 1px;
     grid-auto-rows: minmax(auto, auto);
     position: absolute;
     grid-column-gap: 1px;
-    padding: 3px;
+    padding: 2px;
     color: #e7e7e7;
-    width: max-content;
+    font-family: Lucida Bright;
+    width: 1000px;
     grid-row: 2;
 }
 .chart_element_airplaneModel_barchart {
@@ -241,4 +313,129 @@ body {
     grid-row: 1;
 }
 
+.airportTraficTimeseries_div {
+    border:1px solid black;
+    width: 797px;
+    height: 410px;
+}
 
+.time_series_plot {
+    /*width: 810px;*/
+    /*height: 400px;*/
+    padding-top: 20px;
+}
+
+.chart_element_airline_bar_fleetAge {
+    padding: 1px;
+    padding-top: 15px;
+    border:1px solid black;
+    grid-column: 3;
+    grid-row: 1;
+}
+
+.label_class_airline {
+    margin-left: 15px;
+    font-size: 12px;
+    width: 100%;
+    height: 45px;
+    font-family: Consolas;
+}
+
+
+.title_placard_numbers_left {
+    border:1px solid black;
+    margin-top: 5%;
+    background: #474e56;
+    text-align: center;
+    padding-top: 1px;
+    color: #e7e7e7;
+    font-family: Lucida Bright;
+    width: 98%;
+    height: 20px;
+}
+
+.placard_numbers_left {
+    border:1px solid black;
+    background: #62666e;
+    text-align: center;
+    padding-top: 10px;
+    color: #e8e7e7;
+    font-size: 20px;
+    font-family: Lucida Bright;
+    height: 30px;
+    width: 98%;
+}
+
+/* The switch - the box around the slider */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* The slider */
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: #2196F3;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+    -webkit-transform: translateX(26px);
+    -ms-transform: translateX(26px);
+    transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+.hor_widgets_element_2 {
+    font-size: larger;
+    font-family: Lucida Bright;
+    display: block;
+    color: #e7e7e7;
+    padding-top: 7px;
+    padding-bottom: 7px;
+    background: #4d535e;
+    margin-top: 5px;
+}
