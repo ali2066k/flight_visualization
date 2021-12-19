@@ -31,19 +31,6 @@ var ctx = {
     final_timeSeries_airports: []
 };
 
-
-// TODO:
-// https://ourairports.com/data/
-// https://ourairports.com/data/
-// https://rapidapi.com/Active-api/api/airport-info
-
-// Heat Map
-// https://www.google.com/search?q=d3+geographic+heatmap&rlz=1C1UEAD_frFR969FR969&oq=d3+geographic+heatmap&aqs=chrome..69i57.5713j0j4&sourceid=chrome&ie=UTF-8
-//https://bl.ocks.org/patricksurry/803a131d4c34fde54b9fbb074341daa5
-//
-//
-
-
 const PROJECTIONS = {
     ER: d3.geoEquirectangular().center([0,0]).scale(128).translate([ctx.w/2,ctx.h/2]),
 };
@@ -91,18 +78,6 @@ var loadWidgets = function () {
         .style("right", "0px")
         .style("opacity", "60%");
     loadNumbersPlacard();
-
-    // var horizentalFirst_Widget = d3.select("h_widgets").append('f').attr("id", "h1_widget")
-    //     .attr("class", "hwidgets_items");
-    // horizentalFirst_Widget.style("background", "#000")
-    //     .attr("width", ctx.w / 8)
-    //     .attr("height", ctx.h / 5)
-    //     .style("position", "absolute")
-    //     .style("top", "0px")
-    //     .style("left", "0px")
-    //     .style("z-index", "9")
-    //     .style("opacity", "80%");
-
 }
 
 var loadNumbersPlacard = function () {
@@ -197,9 +172,6 @@ var loadGeo = function(newSVG){
         loadAirlinesDataset();
         loadAirplaneDataset();
         handleKeyEventSearchAirportTraffic();
-        // drawCirclesPath();
-        // loadTrackByAirCrafts("4bb18b", "1637882831");
-        // loadFlightsByAirCrafts("344649", 1636673231-604800, 1636673231);
     }).catch(function(error){console.log(error)});
 };
 
@@ -243,15 +215,6 @@ var drawMap = function(countries, oceans, lakes, glaciers, rivers, svgEl){
         .append("path")
         .attr("d", path4proj)
         .attr("class", "lake");
-
-    // var riverG = ctx.mapG.append("g").attr("id", "rivers");
-    // riverG.selectAll("path.rivers")
-    //     .data(rivers.features)
-    //     .enter()
-    //     .append("path")
-    //     .attr("d", path4proj)
-    //     .attr("class", "river");
-
     var glacierG = ctx.mapG.append("g").attr("id", "glaciers");
     glacierG.selectAll("path.glaciers")
         .data(glaciers.features)
@@ -312,8 +275,6 @@ function zoomed(event, d) {
 
 var loadFlightData = function(data){
     var total_flights = data.length
-    // console.log(total_flights)
-    //Clear currentFlights
     var num = Math.floor((ctx.available_planes_percentage * total_flights)/100);
     ctx.liveFlights = [];
     for (var i = 0; i < total_flights; i++) {
@@ -345,7 +306,7 @@ var loadFlightData = function(data){
             ctx.planeRegisterNum.push(tmp['plane_regNumber']);
             ctx.liveFlights.push(tmp);
         }
-        // console.log(tmp)
+
     }
     var flightNumber_label = d3.select("#number_of_flights_pl");
     flightNumber_label.html(ctx.liveFlights.length);
@@ -458,8 +419,6 @@ var plotAirportTrafficTimeSeries = function () {
         "data": {
             "values": ctx.final_timeSeries_airports
         },
-        // "width": 500,
-        // "height": 300,
         "config": {
             "axis": {
                 "labelFont": "Lucida Bright",
@@ -476,11 +435,6 @@ var plotAirportTrafficTimeSeries = function () {
                 "labelColor": "#bdbdbd"
             }
         },
-        // "mark": {
-        //     "type": "line",
-        //     "color": "#bdbdbd",
-        //     // "filled": false
-        // },
         "encoding": {
             "x": {
                 "timeUnit": "date",
@@ -937,7 +891,7 @@ var loadAirPlanes = function (newSVG) {
                 updatePlanes();
                 // // active for moving planes
                 // setInterval(function(){
-                //     loadAirPlanes();
+                //     loadAirPlanes(newSVG);
                 //     console.log("Ran")
                 // }, 10000);
             });
@@ -1034,11 +988,6 @@ var restructureData = function(airports, routes){
                 // console.log(d);
             }
         });
-
-    // console.log("Node: ");
-    // console.log(ctx.nodes);
-    // console.log("Edges: ");
-    // console.log(ctx.links);
 };
 
 var createGraphLayout = function(){
@@ -1068,11 +1017,6 @@ var createGraphLayout = function(){
     circles.call(d3.drag().on("start", (event, d) => startDragging(event, d))
         .on("drag", (event, d) => dragging(event, d))
         .on("end", (event, d) => endDragging(event, d)));
-
-    // console.log("Node: ");
-    // console.log(ctx.nodes);
-    // console.log("Edges: ");
-    // console.log(ctx.links);
 
     simulation.nodes(ctx.nodes)
         .on("tick", simStep);
@@ -1152,10 +1096,6 @@ var createGraphLayout = function(){
 };
 
 var updateGeoLinks = function(){
-    // d3.selectAll("#links path")
-    //     .attr("d", (d) => (drawCirclesPath(d.source.lonlat,
-    //         d.target.lonlat)));
-    // below: simpler version using <line> segments
     d3.selectAll("#links line")
          .attr("x1", (d) => (d.source.lonlat[0]))
          .attr("y1", (d) => (d.source.lonlat[1]))
@@ -1173,9 +1113,6 @@ var getCurve = function(x1, y1, x2, y2){
 };
 
 var updateNLLinks = function(){
-    // d3.selectAll("#links path")
-    //     .attr("d", (d) => (getCurve(d.source.x, d.source.y, d.target.x, d.target.y)));
-    // below: simpler version using <line> segments
     d3.selectAll("#links line")
       .attr("x1", (d) => (d.source.x))
       .attr("y1", (d) => (d.source.y))
@@ -1382,9 +1319,7 @@ var handleKeyEventOnline = function () {
 }
 
 var addOption = function () {
-    // var list_items = d3.select("airlines-list");
-    // list_items.appendChild(new Option(inputBox.value,inputBox.value));
-    // inputBox.value = "";
+
 }
 
 function startDragging(event, node){
@@ -1407,9 +1342,6 @@ function endDragging(event, node){
     if (!event.active){
         simulation.alphaTarget(0);
     }
-    // commenting the following lines out will keep the
-    // dragged node at its current location, permanently
-    // unless moved again manually
     node.fx = null;
     node.fy = null;
 }
@@ -1431,41 +1363,6 @@ var updateAircraftTrajectory = function (aircraftTrajectoryDict) {
         .attr("xlink:href", "/resources/img/white_dot.png");
 
     planSelection.exit().remove()
-}
-
-var loadTrackByAirCrafts = function (aircrafticao24, time) {
-
-    // if (ctx.planes_bool) {
-    //     // ctx.planes_bool = false;
-    //     console.log(aircrafticao24 + " ||| " + time)
-    //     d3.json(`https://opensky-network.org/api/tracks/all?icao24=${aircrafticao24}&time=${time}`).then(function (data) {
-    //         // console.log(data)
-    //
-    //         var currentAircraft = {};
-    //         currentAircraft['id'] = data['icao24'];
-    //         currentAircraft['startTime'] = data['startTime'];
-    //         currentAircraft['endTime'] = data['endTime'];
-    //         currentAircraft['calllsign'] = data['calllsign'];
-    //
-    //        ctx.path = []
-    //         for (element in data['path']) {
-    //             // console.log(element);
-    //             var point = {};
-    //             point['pointId'] = element;
-    //             point['time'] = data['path'][element][0];
-    //             point['lat'] = data['path'][element][1];
-    //             point['lon'] = data['path'][element][2];
-    //             point['bearing'] = data['path'][element][3];
-    //             point['true_track'] = data['path'][element][4];
-    //             point['on_ground'] = data['path'][element][5];
-    //             ctx.path.push(point)
-    //         }
-    //
-    //         // currentAircraft['path'] = ctx.path;
-    //         // console.log(ctx.path)
-    //         updateAircraftTrajectory(ctx.path);
-    //     }).catch(function(error){console.log(error)});
-    // }
 }
 
 var loadFlightsByAirCrafts = function (aircrafticao24, begin_time, end_time, aircraftOtherInfo) {
@@ -1522,7 +1419,7 @@ var loadFlightsByAirCrafts = function (aircrafticao24, begin_time, end_time, air
                     // console.log("Coord2 is found...");
                     coords2 = [ctx.availableairports[airport]['longitude'], ctx.availableairports[airport]['latitude']];
                     // console.log(coords2);
-                    continue;
+
                 }
             }
         }
@@ -1543,6 +1440,40 @@ var drawCirclesPath = function (coord1, coord2) {
         .style("stroke-width", 3)
 }
 
+var loadTrackByAirCrafts = function (aircrafticao24, time) {
+
+    // if (ctx.planes_bool) {
+    //     // ctx.planes_bool = false;
+    //     console.log(aircrafticao24 + " ||| " + time)
+    //     d3.json(`https://opensky-network.org/api/tracks/all?icao24=${aircrafticao24}&time=${time}`).then(function (data) {
+    //         // console.log(data)
+    //
+    //         var currentAircraft = {};
+    //         currentAircraft['id'] = data['icao24'];
+    //         currentAircraft['startTime'] = data['startTime'];
+    //         currentAircraft['endTime'] = data['endTime'];
+    //         currentAircraft['calllsign'] = data['calllsign'];
+    //
+    //        ctx.path = []
+    //         for (element in data['path']) {
+    //             // console.log(element);
+    //             var point = {};
+    //             point['pointId'] = element;
+    //             point['time'] = data['path'][element][0];
+    //             point['lat'] = data['path'][element][1];
+    //             point['lon'] = data['path'][element][2];
+    //             point['bearing'] = data['path'][element][3];
+    //             point['true_track'] = data['path'][element][4];
+    //             point['on_ground'] = data['path'][element][5];
+    //             ctx.path.push(point)
+    //         }
+    //
+    //         // currentAircraft['path'] = ctx.path;
+    //         // console.log(ctx.path)
+    //         updateAircraftTrajectory(ctx.path);
+    //     }).catch(function(error){console.log(error)});
+    // }
+}
 
 
 
